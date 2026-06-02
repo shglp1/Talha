@@ -7,58 +7,148 @@ import { useContent } from '@/components/ContentProvider'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
+// Parse inline bold **text** into JSX
+function inlineBold(text: string, key: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/)
+  return (
+    <span key={key}>
+      {parts.map((p, j) =>
+        p.startsWith('**') && p.endsWith('**')
+          ? <strong key={j} className="font-semibold" style={{ color: 'var(--text)' }}>{p.slice(2, -2)}</strong>
+          : <span key={j}>{p}</span>
+      )}
+    </span>
+  )
+}
+
+type ListEntry = { num: number; title: string; bullets: string[] }
+
 function renderMessage(text: string) {
   const lines = text.split('\n')
   const elements: React.ReactNode[] = []
-  let listItems: { num: number; text: string }[] = []
 
-  const flushList = (key: string) => {
-    if (!listItems.length) return
-    elements.push(
-      <ol key={key} className="mt-2 mb-1 space-y-2">
-        {listItems.map(({ num, text: item }) => {
-          const clean = item.replace(/\*\*/g, '')
-          const colonIdx = clean.indexOf(':')
-          const title = colonIdx > -1 ? clean.slice(0, colonIdx).trim() : clean.trim()
-          const desc = colonIdx > -1 ? clean.slice(colonIdx + 1).trim() : ''
-          return (
-            <li key={num} className="flex gap-2 text-start">
-              <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-[10px] font-bold flex items-center justify-center">{num}</span>
+  // ── Structured block collector ──────────────────────────────────────────
+  // Supports two AI formats:
+  //   Format A (Arabic):  "1. **Title**: description"
+  //   Format B (English): "1\nTitle\n- bullet\n- bullet"
+  const entries: ListEntry[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+    const trimmed = line.trim()
+
+    // Format A: "1. Title: desc"  or  "1. **Title**: desc"
+    const fmtA = trimmed.match(/^(\d+)\.\s+(.+)$/)
+    if (fmtA) {
+      const clean = fmtA[2].replace(/\*\*/g, '')
+      const colonIdx = clean.indexOf(':')
+      const title = colonIdx > -1 ? clean.slice(0, colonIdx).trim() : clean.trim()
+      const desc  = colonIdx > -1 ? clean.slice(colonIdx + 1).trim() : ''
+      // Collect subsequent "- bullet" lines
+      const bullets: string[] = desc ? [desc] : []
+      i++
+      while (i < lines.length && lines[i].trim().startsWith('-')) {
+        bullets.push(lines[i].trim().slice(1).trim())
+        i++
+      }
+      entries.push({ num: parseInt(fmtA[1], 10), title, bullets })
+      continue
+    }
+
+    // Format B: lone digit(s) on its own line
+    const fmtB = trimmed.match(/^(\d+)$/)
+    if (fmtB) {
+      i++
+      const title = (lines[i]?.trim() || '').replace(/\*\*/g, '')
+      i++
+      const bullets: string[] = []
+      while (i < lines.length && lines[i].trim().startsWith('-')) {
+        bullets.push(lines[i].trim().slice(1).trim())
+        i++
+      }
+      entries.push({ num: parseInt(fmtB[1], 10), title, bullets })
+      continue
+    }
+
+    // ── Flush collected list before emitting a paragraph ──────────────
+    if (entries.length) {
+      elements.push(
+        <ol key={`ol-${i}`} className="mt-2 mb-2 space-y-3">
+          {entries.map(e => (
+            <li key={e.num} className="flex gap-2 text-start">
+              <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-[10px] font-bold flex items-center justify-center">
+                {e.num}
+              </span>
               <span className="text-[13px] leading-relaxed">
-                {desc
-                  ? <><strong className="text-cream font-semibold">{title}</strong><span className="text-cream-muted">: {desc}</span></>
-                  : <span className="text-cream-muted">{title}</span>}
+                <strong className="font-semibold block mb-0.5" style={{ color: 'var(--text)' }}>{e.title}</strong>
+                {e.bullets.length > 0 && (
+                  <ul className="mt-1 space-y-0.5">
+                    {e.bullets.map((b, bi) => (
+                      <li key={bi} className="flex gap-1.5 items-start text-cream-muted">
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-gold/60 flex-shrink-0" />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </span>
             </li>
-          )
-        })}
-      </ol>
-    )
-    listItems = []
+          ))}
+        </ol>
+      )
+      entries.length = 0
+    }
+
+    // ── Regular line ──────────────────────────────────────────────────
+    if (!trimmed) {
+      if (elements.length) elements.push(<div key={`gap-${i}`} className="h-1" />)
+    } else if (trimmed.startsWith('- ')) {
+      // Orphan bullet (outside a numbered block)
+      elements.push(
+        <div key={`b-${i}`} className="flex gap-1.5 items-start text-[13px] text-cream-muted">
+          <span className="mt-1.5 w-1 h-1 rounded-full bg-gold/60 flex-shrink-0" />
+          <span>{trimmed.slice(2)}</span>
+        </div>
+      )
+    } else {
+      elements.push(
+        <p key={`p-${i}`} className="text-[13px] leading-relaxed text-cream-muted">
+          {inlineBold(trimmed, `ib-${i}`)}
+        </p>
+      )
+    }
+    i++
   }
 
-  lines.forEach((line, idx) => {
-    const numbered = line.match(/^(\d+)\.\s+(.*)$/)
-    if (numbered) {
-      listItems.push({ num: parseInt(numbered[1], 10), text: numbered[2] })
-      return
-    }
-    // Only flush if we're leaving a list (non-list, non-empty line)
-    if (listItems.length && line.trim()) flushList(`list-${idx}`)
-    else if (listItems.length && !line.trim()) return // skip blank lines inside list
-    if (!line.trim()) {
-      if (elements.length) elements.push(<div key={`gap-${idx}`} className="h-1" />)
-      return
-    }
-    const parts = line.split(/(\*\*[^*]+\*\*)/)
-    const inline = parts.map((p, j) =>
-      p.startsWith('**') && p.endsWith('**')
-        ? <strong key={j} className="text-cream font-semibold">{p.slice(2, -2)}</strong>
-        : <span key={j}>{p}</span>
+  // Flush any remaining list
+  if (entries.length) {
+    elements.push(
+      <ol key="ol-end" className="mt-2 mb-2 space-y-3">
+        {entries.map(e => (
+          <li key={e.num} className="flex gap-2 text-start">
+            <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-[10px] font-bold flex items-center justify-center">
+              {e.num}
+            </span>
+            <span className="text-[13px] leading-relaxed">
+              <strong className="font-semibold block mb-0.5" style={{ color: 'var(--text)' }}>{e.title}</strong>
+              {e.bullets.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {e.bullets.map((b, bi) => (
+                    <li key={bi} className="flex gap-1.5 items-start text-cream-muted">
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-gold/60 flex-shrink-0" />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
     )
-    elements.push(<p key={`p-${idx}`} className="text-[13px] leading-relaxed text-cream-muted">{inline}</p>)
-  })
-  flushList('list-end')
+  }
+
   return elements
 }
 

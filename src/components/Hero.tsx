@@ -11,7 +11,7 @@ export default function Hero({ lang }: { lang: Lang }) {
   const isAr = lang === 'ar'
   const Arrow = isAr ? ArrowLeft : ArrowRight
   const titleRef = useRef<HTMLDivElement>(null)
-  const { ov, list } = useContent()
+  const { ov, hidden, list, loading } = useContent()
 
   const stats = list('hero_stats', [
     { title: '15+', desc: tr.hero.stat1, icon: null },
@@ -31,11 +31,19 @@ export default function Hero({ lang }: { lang: Lang }) {
   const title3   = ov('hero', 'title3', tr.hero.title3)
   const subtitle = ov('hero', 'subtitle', tr.hero.subtitle)
 
+  const hideBadge    = hidden('hero', 'badge')
+  const hideTitle1   = hidden('hero', 'title1')
+  const hideTitle2   = hidden('hero', 'title2')
+  const hideTitle3   = hidden('hero', 'title3')
+  const hideSubtitle = hidden('hero', 'subtitle')
+  const hideCta1     = hidden('hero', 'cta1')
+  const hideCta2     = hidden('hero', 'cta2')
+
   return (
     <section id="home" className="relative min-h-screen flex flex-col justify-center overflow-hidden" dir={tr.dir}>
       <div className="absolute inset-0 z-0">
         <Image
-          src="/assets/hero-banner.jpg"
+          src={ov('photos', 'hero-banner', '/assets/hero-banner.jpg')}
           alt="مكتب د. طلحة غوث للمحاماة"
           fill
           priority
@@ -49,57 +57,62 @@ export default function Hero({ lang }: { lang: Lang }) {
       <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent z-10" />
 
       <div className="relative z-10 section-container flex flex-col items-center text-center pt-28 pb-20">
-        <div className="reveal visible mb-8" style={{ transitionDelay: '0.1s' }}>
-          <span className="section-badge">{ov('hero', 'badge', tr.hero.badge)}</span>
-        </div>
+        {!hideBadge && (
+          <div className="reveal visible mb-8" style={{ transitionDelay: '0.1s' }}>
+            <span className="section-badge">{ov('hero', 'badge', tr.hero.badge)}</span>
+          </div>
+        )}
 
         <div ref={titleRef} className="reveal mb-6 max-w-4xl" style={{ transitionDelay: '0.25s' }}>
           {isAr ? (
             <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-black" style={{ lineHeight: 1.32 }}>
-              <span className="block text-white">{title1}</span>
-              <span
-                className="block text-gold-gradient"
-                style={{ lineHeight: 1.4, paddingBottom: '0.18em', letterSpacing: '0.01em', overflow: 'visible' }}
-              >
-                {title2}
-              </span>
-              <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-1" style={{ lineHeight: 1.4 }}>{title3}</span>
+              {!hideTitle1 && <span className="block text-white">{title1}</span>}
+              {!hideTitle2 && (
+                <span className="block text-gold-gradient" style={{ lineHeight: 1.4, paddingBottom: '0.18em', letterSpacing: '0.01em', overflow: 'visible' }}>
+                  {title2}
+                </span>
+              )}
+              {!hideTitle3 && <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-1" style={{ lineHeight: 1.4 }}>{title3}</span>}
             </h1>
           ) : (
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-tight font-english">
-              <span className="block text-gold-gradient" style={{ lineHeight: 1.3, paddingBottom: '0.12em' }}>{title1}</span>
-              <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-2">{title3}</span>
+              {!hideTitle1 && <span className="block text-gold-gradient" style={{ lineHeight: 1.3, paddingBottom: '0.12em' }}>{title1}</span>}
+              {!hideTitle3 && <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-2">{title3}</span>}
             </h1>
           )}
         </div>
 
-        <div className="reveal visible gold-divider mb-6" style={{ transitionDelay: '0.4s' }} />
+        {!hideSubtitle && <div className="reveal visible gold-divider mb-6" style={{ transitionDelay: '0.4s' }} />}
 
-        <p
-          className="reveal visible text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 font-semibold text-white/90"
-          style={{ transitionDelay: '0.5s' }}
-        >
-          {subtitle}
-        </p>
+        {!hideSubtitle && (
+          <p className="reveal visible text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 font-semibold text-white/90" style={{ transitionDelay: '0.5s' }}>
+            {subtitle}
+          </p>
+        )}
 
-        <div
-          className="reveal visible flex flex-wrap items-center justify-center gap-4 mb-16"
-          style={{ transitionDelay: '0.65s' }}
-        >
-          <a href="#contact" className="btn-gold gap-2">
-            {ov('hero', 'cta1', tr.hero.cta1)}
-            <Arrow size={18} />
-          </a>
-          <a href="#about" className="btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }}>
-            {ov('hero', 'cta2', tr.hero.cta2)}
-          </a>
-        </div>
+        {(!hideCta1 || !hideCta2) && (
+          <div className="reveal visible flex flex-wrap items-center justify-center gap-4 mb-16" style={{ transitionDelay: '0.65s' }}>
+            {!hideCta1 && (
+              <a href="#contact" className="btn-gold gap-2">
+                {ov('hero', 'cta1', tr.hero.cta1)}
+                <Arrow size={18} />
+              </a>
+            )}
+            {!hideCta2 && (
+              <a href="#about" className="btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }}>
+                {ov('hero', 'cta2', tr.hero.cta2)}
+              </a>
+            )}
+          </div>
+        )}
 
         <div
           className={`reveal visible w-full max-w-3xl grid gap-4 border border-gold/20 rounded-2xl bg-black/40 backdrop-blur-md shadow-lg p-6`}
           style={{
             transitionDelay: '0.8s',
             gridTemplateColumns: `repeat(${Math.min(stats.length, 4)}, minmax(0, 1fr))`,
+            transition: 'opacity 0.3s ease',
+            opacity: loading ? 0 : 1,
           }}
         >
           {stats.map((s, i) => (

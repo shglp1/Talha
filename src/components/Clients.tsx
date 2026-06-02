@@ -9,7 +9,7 @@ import { getIcon } from '@/lib/iconMap'
 export default function Clients({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, list } = useContent()
+  const { ov, list, hidden } = useContent()
 
   const sectors = list(
     'clients_sectors',
@@ -22,10 +22,10 @@ export default function Clients({ lang }: { lang: Lang }) {
         {/* Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           <div className="reveal">
-            <span className="section-badge mb-6 inline-flex">{ov('clients', 'badge', tr.clients.badge)}</span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('clients', 'title', tr.clients.title)}</h2>
+            {!hidden('clients', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('clients', 'badge', tr.clients.badge)}</span>}
+            {!hidden('clients', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('clients', 'title', tr.clients.title)}</h2>}
             <div className="gold-divider-start mb-6" />
-            <p className="text-cream-muted text-base leading-relaxed">{ov('clients', 'body', tr.clients.body)}</p>
+            {!hidden('clients', 'body') && <p className="text-cream-muted text-base leading-relaxed">{ov('clients', 'body', tr.clients.body)}</p>}
           </div>
           {/* Decorative stat */}
           <div className="reveal grid grid-cols-2 gap-4">

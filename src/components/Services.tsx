@@ -10,7 +10,7 @@ import SectionExtras from '@/components/SectionExtras'
 export default function Services({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, list } = useContent()
+  const { ov, list, hidden } = useContent()
 
   const items = list(
     'services',
@@ -22,10 +22,10 @@ export default function Services({ lang }: { lang: Lang }) {
       <div className="section-container">
         {/* Header */}
         <div className="text-center mb-16 reveal">
-          <span className="section-badge mb-6 inline-flex">{ov('services', 'badge', tr.services.badge)}</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('services', 'title', tr.services.title)}</h2>
+          {!hidden('services', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('services', 'badge', tr.services.badge)}</span>}
+          {!hidden('services', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('services', 'title', tr.services.title)}</h2>}
           <div className="gold-divider mb-6" />
-          <p className="text-cream-muted text-lg max-w-2xl mx-auto">{ov('services', 'subtitle', tr.services.subtitle)}</p>
+          {!hidden('services', 'subtitle') && <p className="text-cream-muted text-lg max-w-2xl mx-auto">{ov('services', 'subtitle', tr.services.subtitle)}</p>}
         </div>
 
         {/* Grid */}

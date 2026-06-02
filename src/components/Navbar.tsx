@@ -12,7 +12,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
   const otherLang  = lang === 'ar' ? 'en' : 'ar'
   const [scrolled, setScrolled]   = useState(false)
   const [menuOpen, setMenuOpen]   = useState(false)
-  const { ov } = useContent()
+  const { ov, hidden } = useContent()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -21,13 +21,13 @@ export default function Navbar({ lang }: { lang: Lang }) {
   }, [])
 
   const links = [
-    { href: '#about',    label: ov('nav', 'about',    tr.nav.about) },
-    { href: '#services', label: ov('nav', 'services', tr.nav.services) },
-    { href: '#vision',   label: ov('nav', 'vision',   tr.nav.vision) },
-    { href: '#whyus',    label: ov('nav', 'whyUs',    tr.nav.whyUs) },
-    { href: '#team',     label: ov('nav', 'team',     tr.nav.team) },
-    { href: '#clients',  label: ov('nav', 'clients',  tr.nav.clients) },
-  ]
+    { href: '#about',    key: 'about',    label: ov('nav', 'about',    tr.nav.about) },
+    { href: '#services', key: 'services', label: ov('nav', 'services', tr.nav.services) },
+    { href: '#vision',   key: 'vision',   label: ov('nav', 'vision',   tr.nav.vision) },
+    { href: '#whyus',    key: 'whyUs',    label: ov('nav', 'whyUs',    tr.nav.whyUs) },
+    { href: '#team',     key: 'team',     label: ov('nav', 'team',     tr.nav.team) },
+    { href: '#clients',  key: 'clients',  label: ov('nav', 'clients',  tr.nav.clients) },
+  ].filter(l => !hidden('nav', l.key))
 
   return (
     <header

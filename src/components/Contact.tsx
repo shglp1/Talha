@@ -19,7 +19,7 @@ export default function Contact({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   useScrollReveal()
-  const { ov } = useContent()
+  const { ov, hidden } = useContent()
 
   const phone   = ov('hero', 'phone',   tr.contact.phone)
   const email   = ov('hero', 'email',   tr.contact.email)
@@ -70,10 +70,10 @@ export default function Contact({ lang }: { lang: Lang }) {
       <div className="section-container">
         {/* Header */}
         <div className="text-center mb-16 reveal">
-          <span className="section-badge mb-6 inline-flex">{ov('contact', 'badge', tr.contact.badge)}</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('contact', 'title', tr.contact.title)}</h2>
+          {!hidden('contact', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('contact', 'badge', tr.contact.badge)}</span>}
+          {!hidden('contact', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('contact', 'title', tr.contact.title)}</h2>}
           <div className="gold-divider mb-6" />
-          <p className="text-cream-muted text-lg max-w-xl mx-auto">{ov('contact', 'subtitle', tr.contact.subtitle)}</p>
+          {!hidden('contact', 'subtitle') && <p className="text-cream-muted text-lg max-w-xl mx-auto">{ov('contact', 'subtitle', tr.contact.subtitle)}</p>}
           <SectionExtras section="contact" />
         </div>
 

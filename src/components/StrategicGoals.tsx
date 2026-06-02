@@ -23,7 +23,7 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
       {/* Subtle background — earth from space, very faint */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/assets/global-reach.jpg"
+          src={ov('photos', 'goals-bg', '/assets/global-reach.jpg')}
           alt=""
           fill
           quality={70}

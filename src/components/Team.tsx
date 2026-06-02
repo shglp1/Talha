@@ -15,7 +15,7 @@ export default function Team({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   useScrollReveal()
-  const { ov, list } = useContent()
+  const { ov, list, hidden } = useContent()
 
   const specializations = list(
     'team_specializations',
@@ -31,10 +31,10 @@ export default function Team({ lang }: { lang: Lang }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Text side */}
           <div className={`reveal ${isAr ? 'reveal-left' : 'reveal-right'}`}>
-            <span className="section-badge mb-6 inline-flex">{ov('team', 'badge', tr.team.badge)}</span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 leading-tight">{ov('team', 'title', tr.team.title)}</h2>
+            {!hidden('team', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('team', 'badge', tr.team.badge)}</span>}
+            {!hidden('team', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 leading-tight">{ov('team', 'title', tr.team.title)}</h2>}
             <div className="gold-divider-start mb-7" />
-            <p className="text-cream-muted text-base leading-relaxed mb-8" style={{ textAlign: 'justify' }}>{ov('team', 'body', tr.team.body)}</p>
+            {!hidden('team', 'body') && <p className="text-cream-muted text-base leading-relaxed mb-8" style={{ textAlign: 'justify' }}>{ov('team', 'body', tr.team.body)}</p>}
 
             {/* Specializations */}
             <h4 className="text-cream font-bold mb-4 text-sm tracking-wider flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function Team({ lang }: { lang: Lang }) {
               {/* Team consultation image */}
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] shadow-xl">
                 <Image
-                  src="/assets/consultation.jpg"
+                  src={ov('photos', 'team-main', '/assets/consultation.jpg')}
                   alt={isAr ? 'مكتب د. طلحة غوث للمحاماة' : 'Dr. Talha Ghouth Law Office'}
                   fill
                   quality={95}
@@ -76,7 +76,7 @@ export default function Team({ lang }: { lang: Lang }) {
               {/* Floating digital-law image */}
               <div className={`absolute -bottom-8 ${isAr ? 'left-2 sm:-left-6' : 'right-2 sm:-right-6'} w-28 h-36 sm:w-36 sm:h-44 rounded-xl overflow-hidden border-4 border-white shadow-2xl`}>
                 <Image
-                  src="/assets/digital-law.jpg"
+                  src={ov('photos', 'team-floating', '/assets/digital-law.jpg')}
                   alt={isAr ? 'الخدمات الرقمية' : 'Digital services'}
                   fill
                   quality={80}

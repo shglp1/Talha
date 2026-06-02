@@ -26,7 +26,7 @@ export default function About({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   useScrollReveal()
-  const { ov, list } = useContent()
+  const { ov, list, hidden } = useContent()
 
   const pillars = list(
     'about_pillars',
@@ -48,7 +48,7 @@ export default function About({ lang }: { lang: Lang }) {
             <div className="relative mx-auto max-w-[420px] lg:max-w-none">
               <div className="relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[3/4] shadow-2xl">
                 <Image
-                  src="/assets/team-lawyer.jpg"
+                  src={ov('photos', 'about-lawyer', '/assets/team-lawyer.jpg')}
                   alt={isAr ? 'مبنى مكتب القانوني' : 'Law Office Building'}
                   fill
                   quality={90}
@@ -68,16 +68,16 @@ export default function About({ lang }: { lang: Lang }) {
           </div>
 
           <div className={`reveal ${isAr ? 'reveal-left order-last' : 'reveal-right'}`}>
-            <span className="section-badge mb-5 inline-flex">{ov('about', 'badge', tr.about.badge)}</span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-tight">
+            {!hidden('about', 'badge') && <span className="section-badge mb-5 inline-flex">{ov('about', 'badge', tr.about.badge)}</span>}
+            {!hidden('about', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-tight">
               {ov('about', 'title', tr.about.title)}
-            </h2>
+            </h2>}
             <div className="gold-divider-start mb-7" />
 
             <div className="space-y-4 text-cream-muted text-[15px] sm:text-base leading-loose mb-8" style={{ textAlign: 'justify' }}>
-              <p>{ov('about', 'body1', tr.about.body1)}</p>
-              <p>{ov('about', 'body2', tr.about.body2)}</p>
-              <p>{ov('about', 'body3', tr.about.body3)}</p>
+              {!hidden('about', 'body1') && <p>{ov('about', 'body1', tr.about.body1)}</p>}
+              {!hidden('about', 'body2') && <p>{ov('about', 'body2', tr.about.body2)}</p>}
+              {!hidden('about', 'body3') && <p>{ov('about', 'body3', tr.about.body3)}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">

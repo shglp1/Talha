@@ -20,7 +20,7 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
 export default function Footer({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const year = new Date().getFullYear()
-  const { ov } = useContent()
+  const { ov, hidden } = useContent()
   const phone   = ov('hero', 'phone',   tr.contact.phone)
   const email   = ov('hero', 'email',   tr.contact.email)
   const address = ov('hero', 'address', tr.contact.address)
@@ -38,13 +38,13 @@ export default function Footer({ lang }: { lang: Lang }) {
   ]
 
   const quickLinks = [
-    { href: '#about',   label: ov('nav', 'about',   tr.nav.about) },
-    { href: '#vision',  label: ov('nav', 'vision',  tr.nav.vision) },
-    { href: '#whyus',   label: ov('nav', 'whyUs',   tr.nav.whyUs) },
-    { href: '#team',    label: ov('nav', 'team',    tr.nav.team) },
-    { href: '#clients', label: ov('nav', 'clients', tr.nav.clients) },
-    { href: '#contact', label: ov('nav', 'contact', tr.nav.contact) },
-  ]
+    { href: '#about',   key: 'about',   label: ov('nav', 'about',   tr.nav.about) },
+    { href: '#vision',  key: 'vision',  label: ov('nav', 'vision',  tr.nav.vision) },
+    { href: '#whyus',   key: 'whyUs',   label: ov('nav', 'whyUs',   tr.nav.whyUs) },
+    { href: '#team',    key: 'team',    label: ov('nav', 'team',    tr.nav.team) },
+    { href: '#clients', key: 'clients', label: ov('nav', 'clients', tr.nav.clients) },
+    { href: '#contact', key: 'contact', label: ov('nav', 'contact', tr.nav.contact) },
+  ].filter(l => !hidden('nav', l.key))
 
   return (
     <footer className="bg-obsidian-surface border-t border-obsidian-border" dir={tr.dir}>

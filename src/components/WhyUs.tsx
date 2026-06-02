@@ -10,7 +10,7 @@ import SectionExtras from '@/components/SectionExtras'
 export default function WhyUs({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, list } = useContent()
+  const { ov, list, hidden } = useContent()
 
   const items = list(
     'whyUs',
@@ -22,10 +22,10 @@ export default function WhyUs({ lang }: { lang: Lang }) {
       <div className="section-container">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16 reveal">
-          <span className="section-badge mb-6 inline-flex">{ov('whyUs', 'badge', tr.whyUs.badge)}</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('whyUs', 'title', tr.whyUs.title)}</h2>
+          {!hidden('whyUs', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('whyUs', 'badge', tr.whyUs.badge)}</span>}
+          {!hidden('whyUs', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('whyUs', 'title', tr.whyUs.title)}</h2>}
           <div className="gold-divider mb-6" />
-          <p className="text-cream-muted text-base sm:text-lg max-w-2xl mx-auto">{ov('whyUs', 'subtitle', tr.whyUs.subtitle)}</p>
+          {!hidden('whyUs', 'subtitle') && <p className="text-cream-muted text-base sm:text-lg max-w-2xl mx-auto">{ov('whyUs', 'subtitle', tr.whyUs.subtitle)}</p>}
         </div>
 
         {/* Pillars grid */}

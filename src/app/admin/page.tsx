@@ -6,6 +6,7 @@ import {
   MessageSquare, Settings, LogOut, Handshake, Plus, Trash2, Save,
   CheckCircle2, AlertCircle, RefreshCw, Mail, Phone, Globe, Pen,
   Upload, Loader2, LayoutList, ChevronDown, ArrowUp, ArrowDown, Search, Sparkles, X,
+  Eye, EyeOff, ImageIcon, RotateCcw,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { ContactMessage, SiteContent, Partner, ContentItem } from '@/lib/supabase'
@@ -18,7 +19,7 @@ import {
 } from '@/lib/contentSchema'
 import type { ListSection } from '@/lib/contentSchema'
 
-type Tab = 'messages' | 'content' | 'lists' | 'partners'
+type Tab = 'messages' | 'content' | 'lists' | 'partners' | 'photos'
 
 const C = {
   bg: '#F8F5EF', panel: '#FFFFFF', soft: '#FBF9F4', border: '#ECE6DA',
@@ -26,7 +27,7 @@ const C = {
   gold: '#C4973A', goldDark: '#A27849', goldSoft: '#F6EFDE',
 }
 
-type ContentRow = { section: string; key: string; value_ar: string; value_en: string }
+type ContentRow = { section: string; key: string; value_ar: string; value_en: string; hidden?: boolean }
 type CustomField = {
   section: string; key: string
   label_ar: string; label_en: string
@@ -89,6 +90,10 @@ export default function AdminDashboard() {
   const [previewSections, setPreviewSections] = useState<Set<string>>(new Set())
   const [dbKeys, setDbKeys]       = useState<Set<string>>(new Set())
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const [photoUrls, setPhotoUrls]     = useState<Record<string, string>>({})
+  const [photoUploading, setPhotoUploading] = useState<string | null>(null)
+  const [photoError, setPhotoError]   = useState('')
+  const [photoSuccess, setPhotoSuccess] = useState('')
 
   // Centralized handling of API failures: 401/403 means the session is bad.
   const handleApiError = useCallback((err: unknown) => {
@@ -109,10 +114,16 @@ export default function AdminDashboard() {
       const row = map.get(`${f.section}.${f.key}`)
       const ar = row?.value_ar && row.value_ar.trim() ? row.value_ar : f.def.ar
       const en = row?.value_en && row.value_en.trim() ? row.value_en : f.def.en
-      return { section: f.section, key: f.key, value_ar: ar, value_en: en }
+      const visRow = map.get(`${f.section}.${f.key}__vis`)
+      const isHidden = visRow?.value_ar === '0'
+      return { section: f.section, key: f.key, value_ar: ar, value_en: en, hidden: isHidden }
     })
     setContent(merged)
     setDbKeys(new Set(rows.filter(r => !r.is_custom).map(r => `${r.section}.${r.key}`)))
+    // Load photo overrides
+    const photos: Record<string, string> = {}
+    rows.filter(r => r.section === 'photos').forEach(r => { if (r.value_ar) photos[r.key] = r.value_ar })
+    setPhotoUrls(photos)
     const custom: CustomField[] = rows
       .filter(r => r.is_custom)
       .map(r => ({
@@ -225,6 +236,51 @@ export default function AdminDashboard() {
   }
 
   // ─── Scalar content ───
+  const getAuthHeader = async (): Promise<Record<string, string>> => {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  }
+
+  const uploadPhoto = async (photoKey: string, file: File) => {
+    setPhotoUploading(photoKey)
+    setPhotoError('')
+    setPhotoSuccess('')
+    try {
+      const auth = await getAuthHeader()
+      const form = new FormData()
+      form.append('file', file)
+      form.append('key', photoKey)
+      const res = await fetch('/api/admin/photos', { method: 'POST', headers: auth, body: form })
+      const data = await res.json()
+      if (!res.ok) { setPhotoError(data.error || 'فشل الرفع'); return }
+      setPhotoUrls(prev => ({ ...prev, [photoKey]: data.url }))
+      setPhotoSuccess('تم رفع الصورة بنجاح ✓')
+      setTimeout(() => setPhotoSuccess(''), 3000)
+    } catch { setPhotoError('تعذّر الاتصال بالخادم') }
+    finally { setPhotoUploading(null) }
+  }
+
+  const restorePhoto = async (photoKey: string) => {
+    if (!window.confirm('هل تريد استعادة الصورة الأصلية؟')) return
+    setPhotoUploading(photoKey)
+    setPhotoError('')
+    try {
+      const auth = await getAuthHeader()
+      await fetch(`/api/admin/photos?key=${photoKey}`, { method: 'DELETE', headers: auth })
+      setPhotoUrls(prev => { const n = { ...prev }; delete n[photoKey]; return n })
+      setPhotoSuccess('تمت استعادة الصورة الأصلية ✓')
+      setTimeout(() => setPhotoSuccess(''), 3000)
+    } catch { setPhotoError('تعذّر استعادة الصورة') }
+    finally { setPhotoUploading(null) }
+  }
+
+  const toggleFieldVisibility = (section: string, key: string) => {
+    setContent(prev => prev.map(c =>
+      c.section === section && c.key === key ? { ...c, hidden: !c.hidden } : c
+    ))
+  }
+
   const handleContentChange = (section: string, key: string, field: 'value_ar' | 'value_en', val: string) => {
     setContent(prev => prev.map(c =>
       c.section === section && c.key === key ? { ...c, [field]: val } : c
@@ -254,7 +310,13 @@ export default function AdminDashboard() {
         section: item.section, key: item.key,
         value_ar: item.value_ar, value_en: item.value_en,
       }))
-      await adminApi.saveContent(scalarRows)
+      // Save visibility markers: key = fieldKey + '__vis', value '0' = hidden, '1' = visible
+      const visRows = content.map(item => ({
+        section: item.section, key: item.key + '__vis',
+        value_ar: item.hidden ? '0' : '1',
+        value_en: item.hidden ? '0' : '1',
+      }))
+      await adminApi.saveContent([...scalarRows, ...visRows])
       setLastSavedAt(new Date().toLocaleTimeString('ar-SA'))
       setSaveStatus('saved')
       setDbKeys(new Set(content.map(c => `${c.section}.${c.key}`)))
@@ -503,7 +565,21 @@ export default function AdminDashboard() {
 
   const saveBackup = () => {
     try {
-      const payload = { content, customFields, items, partners, savedAt: new Date().toISOString() }
+      // Only back up items that exist in the DB (have a real id) — skip preview/default placeholders
+      // Also deduplicate by section+title_ar to prevent re-saving corrupted data
+      const dbItems: Record<string, ContentItem[]> = {}
+      Object.entries(items).forEach(([sec, rows]) => {
+        const real = rows.filter(r => !!r.id)
+        const seen = new Set<string>()
+        const deduped = real.filter(r => {
+          const k = `${r.section}::${r.title_ar}`
+          if (seen.has(k)) return false
+          seen.add(k)
+          return true
+        })
+        if (deduped.length) dbItems[sec] = deduped
+      })
+      const payload = { content, customFields, items: dbItems, partners, savedAt: new Date().toISOString() }
       localStorage.setItem(ADMIN_BACKUP_KEY, JSON.stringify(payload))
       setBackupStatus('saved')
       setTimeout(() => setBackupStatus('idle'), 2500)
@@ -535,15 +611,36 @@ export default function AdminDashboard() {
       }))
       if (scalarRows.length || customRows.length) await adminApi.saveContent([...scalarRows, ...customRows])
 
-      // Replace content_items
-      const currentItems = Object.values(items).flat()
-      await Promise.all(currentItems.map(it => it.id ? adminApi.deleteItem(it.id) : Promise.resolve()))
-      for (const it of backupItems) {
-        await adminApi.addItem({
-          section: it.section, title_ar: it.title_ar, title_en: it.title_en,
-          desc_ar: it.desc_ar, desc_en: it.desc_en, icon: it.icon ?? null,
-          sort_order: it.sort_order ?? 0, active: it.active ?? true,
-        })
+      // Replace content_items — section by section (only touches sections present
+      // in the backup, leaves all other sections untouched).
+      const freshItems = await adminApi.getItems()
+      const allDbItems = (freshItems.data ?? []) as ContentItem[]
+
+      // Deduplicate backup items by (section + title_ar)
+      const seenKeys = new Set<string>()
+      const uniqueItems = backupItems.filter(it => {
+        if (!it.id) return false
+        const k = `${it.section}::${it.title_ar}`
+        if (seenKeys.has(k)) return false
+        seenKeys.add(k)
+        return true
+      })
+
+      // Group backup items by section
+      const backupBySec: Record<string, ContentItem[]> = {}
+      uniqueItems.forEach(it => { (backupBySec[it.section] ??= []).push(it) })
+
+      // For each section in backup: delete only that section's DB rows, then reinsert
+      for (const [section, sectionItems] of Object.entries(backupBySec)) {
+        const currentInSection = allDbItems.filter(it => it.section === section)
+        await Promise.all(currentInSection.map(it => it.id ? adminApi.deleteItem(it.id) : Promise.resolve()))
+        for (const it of sectionItems) {
+          await adminApi.addItem({
+            section: it.section, title_ar: it.title_ar, title_en: it.title_en,
+            desc_ar: it.desc_ar, desc_en: it.desc_en, icon: it.icon ?? null,
+            sort_order: it.sort_order ?? 0, active: it.active ?? true,
+          })
+        }
       }
 
       // Replace partners
@@ -571,6 +668,7 @@ export default function AdminDashboard() {
     { id: 'content',  label: 'نصوص الموقع',  Icon: Settings, badge: 0 },
     { id: 'lists',    label: 'الأقسام والبطاقات', Icon: LayoutList, badge: 0 },
     { id: 'partners', label: 'شركاء النجاح',   Icon: Handshake, badge: 0 },
+    { id: 'photos',   label: 'صور الموقع',     Icon: ImageIcon, badge: 0 },
   ]
 
   const titleMap: Record<Tab, string> = {
@@ -578,6 +676,7 @@ export default function AdminDashboard() {
     content: 'تعديل نصوص الموقع',
     lists: 'الأقسام والبطاقات',
     partners: 'إدارة شركاء النجاح',
+    photos: 'صور الموقع',
   }
 
   const contentGroups = FIELD_GROUPS.filter(group => {
@@ -804,15 +903,35 @@ export default function AdminDashboard() {
 
                           {group.fields.map(field => {
                             const item = content.find(c => c.section === field.section && c.key === field.key)
+                            const isHidden = item?.hidden ?? false
                             return (
-                              <div key={`${field.section}_${field.key}`} style={{ background: C.soft, border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 18px' }}>
+                              <div key={`${field.section}_${field.key}`} style={{ background: isHidden ? '#F5F5F5' : C.soft, border: `1px solid ${isHidden ? '#DDD' : C.border}`, borderRadius: 12, padding: '16px 18px', opacity: isHidden ? 0.7 : 1, transition: 'all 0.2s' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                                  <Pen size={13} style={{ color: C.gold, flexShrink: 0 }} />
-                                  <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{field.labelAr}</span>
+                                  <Pen size={13} style={{ color: isHidden ? C.dim : C.gold, flexShrink: 0 }} />
+                                  <span style={{ fontSize: 14, fontWeight: 700, color: isHidden ? C.muted : C.text, textDecoration: isHidden ? 'line-through' : 'none' }}>{field.labelAr}</span>
                                   {dbKeys.has(`${field.section}.${field.key}`) && (
-                                    <span style={{ fontSize: 10, background: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: 100, fontWeight: 700 }}>محفوظ</span>
+                                    <span style={{ fontSize: 10, background: isHidden ? '#F3F4F6' : '#DCFCE7', color: isHidden ? C.dim : '#166534', padding: '2px 8px', borderRadius: 100, fontWeight: 700 }}>محفوظ</span>
                                   )}
-                                  <span style={{ marginInlineStart: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                  {isHidden && (
+                                    <span style={{ fontSize: 10, background: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: 100, fontWeight: 700 }}>مخفي من الموقع</span>
+                                  )}
+                                  <span style={{ marginInlineStart: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                                    {/* Visibility Toggle */}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleFieldVisibility(field.section, field.key)}
+                                      title={isHidden ? 'إظهار في الموقع' : 'إخفاء من الموقع'}
+                                      style={{
+                                        padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                                        display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700,
+                                        border: isHidden ? '1px solid #F59E0B' : `1px solid ${C.border}`,
+                                        background: isHidden ? '#FFFBEB' : '#fff',
+                                        color: isHidden ? '#92400E' : C.muted,
+                                      }}
+                                    >
+                                      {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                                      {isHidden ? 'مخفي' : 'ظاهر'}
+                                    </button>
                                     <button type="button" onClick={() => restoreDefaultField(field.section, field.key)} style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff', color: C.muted, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
                                       استعادة النص الافتراضي
                                     </button>
@@ -825,17 +944,17 @@ export default function AdminDashboard() {
                                   <div>
                                     <label style={{ display: 'block', fontSize: 11, color: C.muted, marginBottom: 6, letterSpacing: '0.05em' }}>بالعربية</label>
                                     {field.multiline ? (
-                                      <textarea value={item?.value_ar ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)} style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6 }} dir="rtl" placeholder={field.labelAr} />
+                                      <textarea value={item?.value_ar ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)} style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6, opacity: isHidden ? 0.5 : 1 }} dir="rtl" placeholder={field.labelAr} disabled={isHidden} />
                                     ) : (
-                                      <input value={item?.value_ar ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)} style={adminInputStyle} dir="rtl" placeholder={field.labelAr} />
+                                      <input value={item?.value_ar ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)} style={{ ...adminInputStyle, opacity: isHidden ? 0.5 : 1 }} dir="rtl" placeholder={field.labelAr} disabled={isHidden} />
                                     )}
                                   </div>
                                   <div>
                                     <label style={{ display: 'block', fontSize: 11, color: C.muted, marginBottom: 6, letterSpacing: '0.05em' }}>English</label>
                                     {field.multiline ? (
-                                      <textarea value={item?.value_en ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)} style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6 }} dir="ltr" placeholder={field.labelEn} />
+                                      <textarea value={item?.value_en ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)} style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6, opacity: isHidden ? 0.5 : 1 }} dir="ltr" placeholder={field.labelEn} disabled={isHidden} />
                                     ) : (
-                                      <input value={item?.value_en ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)} style={adminInputStyle} dir="ltr" placeholder={field.labelEn} />
+                                      <input value={item?.value_en ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)} style={{ ...adminInputStyle, opacity: isHidden ? 0.5 : 1 }} dir="ltr" placeholder={field.labelEn} disabled={isHidden} />
                                     )}
                                   </div>
                                 </div>
@@ -951,6 +1070,75 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+
+          {/* ─── Photos Tab ─── */}
+          {tab === 'photos' && (() => {
+            const PHOTOS = [
+              { key: 'hero-banner',   labelAr: 'صورة الخلفية الرئيسية',        section: 'الواجهة الرئيسية',     original: '/assets/hero-banner.jpg' },
+              { key: 'about-lawyer',  labelAr: 'صورة قسم «من نحن»',            section: 'من نحن',               original: '/assets/team-lawyer.jpg' },
+              { key: 'team-main',     labelAr: 'الصورة الرئيسية لقسم «فريقنا»', section: 'فريقنا',              original: '/assets/consultation.jpg' },
+              { key: 'team-floating', labelAr: 'الصورة الصغيرة العائمة (فريق)', section: 'فريقنا',             original: '/assets/digital-law.jpg' },
+              { key: 'closing-bg',    labelAr: 'خلفية الاقتباس الختامي',        section: 'الاقتباس الختامي',    original: '/assets/scales-dramatic.jpg' },
+              { key: 'goals-bg',      labelAr: 'خلفية الأهداف الاستراتيجية',    section: 'أهدافنا الاستراتيجية', original: '/assets/global-reach.jpg' },
+            ]
+            return (
+              <div>
+                <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 20, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7, maxWidth: 900 }}>
+                  ارفع صورة جديدة لأي قسم — الصورة الأصلية محفوظة دائماً ويمكن استعادتها. الحد الأقصى لحجم الصورة 8 ميجابايت (JPG, PNG, WEBP).
+                </div>
+                {photoSuccess && <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 8, padding: '10px 16px', marginBottom: 14, color: '#166534', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}><CheckCircle2 size={16} />{photoSuccess}</div>}
+                {photoError  && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 16px', marginBottom: 14, color: '#DC2626', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}><AlertCircle size={16} />{photoError}</div>}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16, maxWidth: 900 }}>
+                  {PHOTOS.map(ph => {
+                    const current = photoUrls[ph.key]
+                    const isCustom = !!current
+                    const isUploading = photoUploading === ph.key
+                    const displaySrc = current || ph.original
+                    return (
+                      <div key={ph.key} style={{ background: C.panel, border: `1px solid ${isCustom ? C.gold : C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                        {/* Preview */}
+                        <div style={{ position: 'relative', height: 180, background: '#1A1A1A', overflow: 'hidden' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={displaySrc} alt={ph.labelAr} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isUploading ? 0.4 : 1, transition: 'opacity 0.2s' }} />
+                          {isUploading && (
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Loader2 size={28} style={{ color: C.gold, animation: 'spin 1s linear infinite' }} />
+                            </div>
+                          )}
+                          {isCustom && (
+                            <span style={{ position: 'absolute', top: 8, right: 8, background: C.gold, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 100 }}>مُحدَّثة</span>
+                          )}
+                        </div>
+                        {/* Info + actions */}
+                        <div style={{ padding: '14px 16px' }}>
+                          <div style={{ marginBottom: 4 }}>
+                            <p style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: 0 }}>{ph.labelAr}</p>
+                            <p style={{ fontSize: 11, color: C.dim, margin: '2px 0 0' }}>{ph.section}</p>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                            {/* Upload new */}
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.gold, color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isUploading ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                              <Upload size={14} />
+                              {isCustom ? 'تغيير الصورة' : 'رفع صورة جديدة'}
+                              <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }} disabled={isUploading}
+                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(ph.key, f); e.target.value = '' }} />
+                            </label>
+                            {/* Restore original */}
+                            {isCustom && (
+                              <button onClick={() => restorePhoto(ph.key)} disabled={isUploading}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.soft, border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 13, cursor: isUploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                <RotateCcw size={13} /> استعادة الأصلية
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* ─── Partners Tab ─── */}
           {tab === 'partners' && (

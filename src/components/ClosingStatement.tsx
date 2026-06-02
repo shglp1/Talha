@@ -9,14 +9,14 @@ import SectionExtras from '@/components/SectionExtras'
 export default function ClosingStatement({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov } = useContent()
+  const { ov, hidden } = useContent()
 
   return (
     <section className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
       {/* Background — scales dramatic dark */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/assets/scales-dramatic.jpg"
+          src={ov('photos', 'closing-bg', '/assets/scales-dramatic.jpg')}
           alt="scales of justice"
           fill
           quality={70}
