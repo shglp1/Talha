@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <!-- Scales icon -->
+  <g transform="translate(8,8)">
+    <!-- Center pole -->
+    <rect x="29" y="14" width="2" height="44" fill="#C4973A"/>
+    <!-- Crossbar -->
+    <rect x="10" y="16" width="40" height="2" fill="#C4973A"/>
+    <!-- Left chain -->
+    <line x1="12" y1="18" x2="12" y2="34" stroke="#C4973A" stroke-width="1.2"/>
+    <!-- Right chain -->
+    <line x1="48" y1="18" x2="48" y2="34" stroke="#C4973A" stroke-width="1.2"/>
+    <!-- Left pan -->
+    <path d="M5 34 Q12 40 19 34" stroke="#C4973A" stroke-width="1.5" fill="none"/>
+    <!-- Right pan -->
+    <path d="M41 34 Q48 40 55 34" stroke="#C4973A" stroke-width="1.5" fill="none"/>
+    <!-- Base -->
+    <rect x="22" y="56" width="16" height="2" rx="1" fill="#C4973A"/>
+    <!-- Decorative tip -->
+    <polygon points="30,4 28,14 32,14" fill="#C4973A"/>
+  </g>
+  <!-- Arabic text -->
+  <text x="76" y="34" font-family="Tajawal, Arial, sans-serif" font-size="14" font-weight="700" fill="#C4973A" text-anchor="start">مكتب د. طلحة غوث</text>
+  <!-- English text -->
+  <text x="76" y="52" font-family="Arial, sans-serif" font-size="10" font-weight="400" fill="#8A8480" text-anchor="start">DR. TALHA GHAWTH</text>
+  <text x="76" y="65" font-family="Arial, sans-serif" font-size="8" font-weight="400" fill="#8A8480" text-anchor="start">LAW OFFICE</text>
+  <!-- Gold divider -->
+  <rect x="76" y="56" width="140" height="1" fill="#C4973A" opacity="0.4"/>
+</svg>
