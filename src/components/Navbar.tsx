@@ -37,7 +37,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
       dir={tr.dir}
     >
       <div className="section-container">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-24">
           {/* Logo */}
           <Link href={`/${lang}`} className="flex items-center gap-3 flex-shrink-0">
             <Image
@@ -47,7 +47,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
               height={88}
               priority
               unoptimized
-              className="h-9 sm:h-10 lg:h-12 w-auto max-w-[220px] sm:max-w-[280px] object-contain"
+              className="h-14 sm:h-16 lg:h-20 w-auto max-w-[280px] sm:max-w-[360px] lg:max-w-[440px] object-contain"
             />
           </Link>
 
@@ -57,7 +57,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
               <a
                 key={l.href}
                 href={l.href}
-                className="px-4 py-2 text-sm font-medium text-cream-muted hover:text-gold transition-colors duration-200 rounded-lg hover:bg-gold/5"
+                className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:text-gold hover:bg-gold/10 ${scrolled ? 'text-cream-muted' : 'text-white/90'}`}
                 onClick={() => setMenuOpen(false)}
               >
                 {l.label}
@@ -69,7 +69,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
           <div className="hidden lg:flex items-center gap-3">
             <Link
               href={`/${otherLang}`}
-              className="text-sm font-medium text-cream-muted hover:text-gold border border-obsidian-border rounded-full px-4 py-1.5 transition-colors hover:border-gold/40"
+              className={`text-sm font-medium hover:text-gold rounded-full px-4 py-1.5 transition-colors hover:border-gold/40 border ${scrolled ? 'text-cream-muted border-obsidian-border' : 'text-white/90 border-white/30'}`}
             >
               {tr.nav.en}
             </Link>

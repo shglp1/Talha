@@ -43,11 +43,7 @@ export default function Hero({ lang }: { lang: Lang }) {
           sizes="100vw"
           className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/55 to-white" />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 42%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.30) 55%, transparent 100%)' }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/65" />
       </div>
 
       <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent z-10" />
@@ -60,19 +56,19 @@ export default function Hero({ lang }: { lang: Lang }) {
         <div ref={titleRef} className="reveal mb-6 max-w-4xl" style={{ transitionDelay: '0.25s' }}>
           {isAr ? (
             <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-black" style={{ lineHeight: 1.32 }}>
-              <span className="block text-cream">{title1}</span>
+              <span className="block text-white">{title1}</span>
               <span
                 className="block text-gold-gradient"
                 style={{ lineHeight: 1.4, paddingBottom: '0.18em', letterSpacing: '0.01em', overflow: 'visible' }}
               >
                 {title2}
               </span>
-              <span className="block text-cream text-3xl sm:text-4xl lg:text-5xl font-bold mt-1" style={{ lineHeight: 1.4 }}>{title3}</span>
+              <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-1" style={{ lineHeight: 1.4 }}>{title3}</span>
             </h1>
           ) : (
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-tight font-english">
               <span className="block text-gold-gradient" style={{ lineHeight: 1.3, paddingBottom: '0.12em' }}>{title1}</span>
-              <span className="block text-cream text-3xl sm:text-4xl lg:text-5xl font-bold mt-2">{title3}</span>
+              <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-2">{title3}</span>
             </h1>
           )}
         </div>
@@ -80,8 +76,8 @@ export default function Hero({ lang }: { lang: Lang }) {
         <div className="reveal visible gold-divider mb-6" style={{ transitionDelay: '0.4s' }} />
 
         <p
-          className="reveal visible text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 font-semibold"
-          style={{ transitionDelay: '0.5s', color: '#3A332A' }}
+          className="reveal visible text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 font-semibold text-white/90"
+          style={{ transitionDelay: '0.5s' }}
         >
           {subtitle}
         </p>
@@ -94,13 +90,13 @@ export default function Hero({ lang }: { lang: Lang }) {
             {ov('hero', 'cta1', tr.hero.cta1)}
             <Arrow size={18} />
           </a>
-          <a href="#about" className="btn-outline">
+          <a href="#about" className="btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }}>
             {ov('hero', 'cta2', tr.hero.cta2)}
           </a>
         </div>
 
         <div
-          className={`reveal visible w-full max-w-3xl grid gap-4 border border-obsidian-border rounded-2xl bg-white/70 backdrop-blur-md shadow-lg p-6`}
+          className={`reveal visible w-full max-w-3xl grid gap-4 border border-gold/20 rounded-2xl bg-black/40 backdrop-blur-md shadow-lg p-6`}
           style={{
             transitionDelay: '0.8s',
             gridTemplateColumns: `repeat(${Math.min(stats.length, 4)}, minmax(0, 1fr))`,
@@ -112,7 +108,7 @@ export default function Hero({ lang }: { lang: Lang }) {
               className={`text-center ${i < stats.length - 1 ? (isAr ? 'border-l border-obsidian-border' : 'border-r border-obsidian-border') : ''}`}
             >
               <div className="text-3xl sm:text-4xl font-black text-gold-gradient leading-none mb-1">{s.title}</div>
-              <div className="text-xs sm:text-sm text-cream-muted">{s.desc}</div>
+              <div className="text-xs sm:text-sm text-white/70">{s.desc}</div>
             </div>
           ))}
         </div>
@@ -120,7 +116,7 @@ export default function Hero({ lang }: { lang: Lang }) {
 
       <a
         href="#about"
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-cream/30 hover:text-gold transition-colors group"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-white/40 hover:text-gold transition-colors group"
         aria-label="Scroll down"
       >
         <ChevronDown size={28} className="animate-bounce" />

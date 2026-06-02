@@ -1,11 +1,66 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Scale } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
 
 type Message = { role: 'user' | 'assistant'; content: string }
+
+function renderMessage(text: string) {
+  const lines = text.split('\n')
+  const elements: React.ReactNode[] = []
+  let listItems: { num: number; text: string }[] = []
+
+  const flushList = (key: string) => {
+    if (!listItems.length) return
+    elements.push(
+      <ol key={key} className="mt-2 mb-1 space-y-2">
+        {listItems.map(({ num, text: item }) => {
+          const clean = item.replace(/\*\*/g, '')
+          const colonIdx = clean.indexOf(':')
+          const title = colonIdx > -1 ? clean.slice(0, colonIdx).trim() : clean.trim()
+          const desc = colonIdx > -1 ? clean.slice(colonIdx + 1).trim() : ''
+          return (
+            <li key={num} className="flex gap-2 text-start">
+              <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-[10px] font-bold flex items-center justify-center">{num}</span>
+              <span className="text-[13px] leading-relaxed">
+                {desc
+                  ? <><strong className="text-cream font-semibold">{title}</strong><span className="text-cream-muted">: {desc}</span></>
+                  : <span className="text-cream-muted">{title}</span>}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    )
+    listItems = []
+  }
+
+  lines.forEach((line, idx) => {
+    const numbered = line.match(/^(\d+)\.\s+(.*)$/)
+    if (numbered) {
+      listItems.push({ num: parseInt(numbered[1], 10), text: numbered[2] })
+      return
+    }
+    // Only flush if we're leaving a list (non-list, non-empty line)
+    if (listItems.length && line.trim()) flushList(`list-${idx}`)
+    else if (listItems.length && !line.trim()) return // skip blank lines inside list
+    if (!line.trim()) {
+      if (elements.length) elements.push(<div key={`gap-${idx}`} className="h-1" />)
+      return
+    }
+    const parts = line.split(/(\*\*[^*]+\*\*)/)
+    const inline = parts.map((p, j) =>
+      p.startsWith('**') && p.endsWith('**')
+        ? <strong key={j} className="text-cream font-semibold">{p.slice(2, -2)}</strong>
+        : <span key={j}>{p}</span>
+    )
+    elements.push(<p key={`p-${idx}`} className="text-[13px] leading-relaxed text-cream-muted">{inline}</p>)
+  })
+  flushList('list-end')
+  return elements
+}
 
 export default function Chatbot({ lang }: { lang: Lang }) {
   const tr = t[lang]
@@ -115,7 +170,7 @@ export default function Chatbot({ lang }: { lang: Lang }) {
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? (lang === 'ar' ? 'justify-start' : 'justify-end') : (lang === 'ar' ? 'justify-end' : 'justify-start')}`}>
               <div className={m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot'}>
-                {m.content}
+                {m.role === 'assistant' ? renderMessage(m.content) : m.content}
               </div>
             </div>
           ))}

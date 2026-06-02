@@ -65,16 +65,16 @@ export default function Team({ lang }: { lang: Lang }) {
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] shadow-xl">
                 <Image
                   src="/assets/consultation.jpg"
-                  alt={isAr ? 'فريق المحامين' : 'Legal team'}
+                  alt={isAr ? 'مكتب د. طلحة غوث للمحاماة' : 'Dr. Talha Ghouth Law Office'}
                   fill
-                  quality={90}
+                  quality={95}
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-obsidian/30 via-transparent to-transparent" />
               </div>
 
               {/* Floating digital-law image */}
-              <div className={`absolute -bottom-8 ${isAr ? '-left-6' : '-right-6'} w-32 h-40 sm:w-36 sm:h-44 rounded-xl overflow-hidden border-4 border-white shadow-2xl`}>
+              <div className={`absolute -bottom-8 ${isAr ? 'left-2 sm:-left-6' : 'right-2 sm:-right-6'} w-28 h-36 sm:w-36 sm:h-44 rounded-xl overflow-hidden border-4 border-white shadow-2xl`}>
                 <Image
                   src="/assets/digital-law.jpg"
                   alt={isAr ? 'الخدمات الرقمية' : 'Digital services'}

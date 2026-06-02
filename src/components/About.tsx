@@ -49,11 +49,11 @@ export default function About({ lang }: { lang: Lang }) {
               <div className="relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[3/4] shadow-2xl">
                 <Image
                   src="/assets/team-lawyer.jpg"
-                  alt={isAr ? 'محامي متخصص' : 'Specialist Lawyer'}
+                  alt={isAr ? 'مبنى مكتب القانوني' : 'Law Office Building'}
                   fill
                   quality={90}
                   sizes="(max-width: 1024px) 420px, 50vw"
-                  className="object-cover object-top"
+                  className="object-cover object-center"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-obsidian/40 via-transparent to-transparent" />
               </div>
