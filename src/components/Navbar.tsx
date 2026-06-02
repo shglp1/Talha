@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { Menu, X, Phone } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
+import { useContent } from '@/components/ContentProvider'
 
 export default function Navbar({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const otherLang  = lang === 'ar' ? 'en' : 'ar'
   const [scrolled, setScrolled]   = useState(false)
   const [menuOpen, setMenuOpen]   = useState(false)
+  const { ov } = useContent()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -19,12 +21,12 @@ export default function Navbar({ lang }: { lang: Lang }) {
   }, [])
 
   const links = [
-    { href: '#about',    label: tr.nav.about },
-    { href: '#services', label: tr.nav.services },
-    { href: '#vision',   label: tr.nav.vision },
-    { href: '#whyus',    label: tr.nav.whyUs },
-    { href: '#team',     label: tr.nav.team },
-    { href: '#clients',  label: tr.nav.clients },
+    { href: '#about',    label: ov('nav', 'about',    tr.nav.about) },
+    { href: '#services', label: ov('nav', 'services', tr.nav.services) },
+    { href: '#vision',   label: ov('nav', 'vision',   tr.nav.vision) },
+    { href: '#whyus',    label: ov('nav', 'whyUs',    tr.nav.whyUs) },
+    { href: '#team',     label: ov('nav', 'team',     tr.nav.team) },
+    { href: '#clients',  label: ov('nav', 'clients',  tr.nav.clients) },
   ]
 
   return (
@@ -37,8 +39,16 @@ export default function Navbar({ lang }: { lang: Lang }) {
       <div className="section-container">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link href={`/${lang}`} className="flex-shrink-0">
-            <Image src="/logo.svg" alt="مكتب د. طلحة غوث" width={220} height={55} priority />
+          <Link href={`/${lang}`} className="flex items-center gap-3 flex-shrink-0">
+            <Image
+              src="/logo.png"
+              alt="د. طلحة غوث للمحاماة | Dr. Talha Ghouth Law Firm"
+              width={400}
+              height={88}
+              priority
+              unoptimized
+              className="h-9 sm:h-10 lg:h-12 w-auto max-w-[220px] sm:max-w-[280px] object-contain"
+            />
           </Link>
 
           {/* Desktop nav */}
@@ -47,7 +57,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
               <a
                 key={l.href}
                 href={l.href}
-                className="px-4 py-2 text-sm font-medium text-cream-muted hover:text-gold transition-colors duration-200 rounded-lg hover:bg-white/5"
+                className="px-4 py-2 text-sm font-medium text-cream-muted hover:text-gold transition-colors duration-200 rounded-lg hover:bg-gold/5"
                 onClick={() => setMenuOpen(false)}
               >
                 {l.label}
@@ -67,7 +77,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
               href="#contact"
               className="btn-gold text-sm py-2.5 px-6"
             >
-              {tr.nav.contact}
+              {ov('nav', 'contact', tr.nav.contact)}
             </a>
           </div>
 
@@ -90,7 +100,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
               <a
                 key={l.href}
                 href={l.href}
-                className="px-4 py-3 text-base font-medium text-cream-muted hover:text-gold hover:bg-white/5 rounded-lg transition-colors"
+                className="px-4 py-3 text-base font-medium text-cream-muted hover:text-gold hover:bg-gold/5 rounded-lg transition-colors"
                 onClick={() => setMenuOpen(false)}
               >
                 {l.label}
@@ -109,7 +119,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
                 className="flex-1 btn-gold text-sm py-2.5 justify-center"
                 onClick={() => setMenuOpen(false)}
               >
-                {tr.nav.contact}
+                {ov('nav', 'contact', tr.nav.contact)}
               </a>
             </div>
           </nav>

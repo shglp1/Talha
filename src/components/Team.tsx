@@ -1,48 +1,68 @@
 'use client'
 import Image from 'next/image'
-import { CheckCircle2 } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
+import { useContent } from '@/components/ContentProvider'
+import { getIcon } from '@/lib/iconMap'
+import SectionExtras from '@/components/SectionExtras'
+
+// Fallback icon names matching each default specialization, in order.
+const SPEC_ICON_NAMES = ['Building2', 'Landmark', 'Scroll', 'Users', 'Gavel', 'TrendingUp']
 
 export default function Team({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   useScrollReveal()
+  const { ov, list } = useContent()
+
+  const specializations = list(
+    'team_specializations',
+    tr.team.specializations.map((s, i) => ({ title: s, desc: '', icon: SPEC_ICON_NAMES[i] ?? 'Building2' })),
+  )
 
   return (
-    <section id="team" className="section-padding bg-obsidian relative overflow-hidden" dir={tr.dir}>
+    <section id="team" className="section-padding relative overflow-hidden" style={{ background: 'var(--surface)' }} dir={tr.dir}>
       {/* Subtle gold glow */}
       <div className="absolute top-0 start-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-gold/5 blur-[80px] pointer-events-none" />
 
       <div className="relative z-10 section-container">
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center`}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Text side */}
           <div className={`reveal ${isAr ? 'reveal-left' : 'reveal-right'}`}>
-            <span className="section-badge mb-6 inline-flex">{tr.team.badge}</span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 leading-tight">{tr.team.title}</h2>
+            <span className="section-badge mb-6 inline-flex">{ov('team', 'badge', tr.team.badge)}</span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 leading-tight">{ov('team', 'title', tr.team.title)}</h2>
             <div className="gold-divider-start mb-7" />
-            <p className="text-cream-muted text-base leading-relaxed mb-8">{tr.team.body}</p>
+            <p className="text-cream-muted text-base leading-relaxed mb-8" style={{ textAlign: 'justify' }}>{ov('team', 'body', tr.team.body)}</p>
 
             {/* Specializations */}
-            <h4 className="text-cream font-semibold mb-4 text-sm uppercase tracking-wider">
-              {isAr ? 'تخصصاتنا' : 'Our Specializations'}
+            <h4 className="text-cream font-bold mb-4 text-sm tracking-wider flex items-center gap-2">
+              <span className="w-6 h-px bg-gold" />
+              {isAr ? 'مجالات تخصصنا' : 'Our Specializations'}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {tr.team.specializations.map(s => (
-                <div key={s} className="flex items-center gap-3 bg-obsidian-card border border-obsidian-border rounded-lg px-4 py-3">
-                  <CheckCircle2 size={16} className="text-gold flex-shrink-0" />
-                  <span className="text-sm text-cream-muted">{s}</span>
-                </div>
-              ))}
+              {specializations.map((s, i) => {
+                const Icon = getIcon(s.icon) ?? Building2
+                return (
+                  <div key={s.id ?? `${s.title}-${i}`} className="group flex items-center gap-3 bg-white border border-obsidian-border rounded-xl px-4 py-3 transition-all hover:border-gold/40 hover:shadow-[0_8px_20px_rgba(26,22,15,0.06)]">
+                    <span className="w-9 h-9 rounded-lg bg-gold-soft border border-gold/25 flex items-center justify-center flex-shrink-0 group-hover:bg-gold transition-colors">
+                      <Icon size={17} className="text-gold-dark group-hover:text-white transition-colors" />
+                    </span>
+                    <span className="text-sm font-medium text-cream">{s.title}</span>
+                  </div>
+                )
+              })}
             </div>
+
+            <SectionExtras section="team" align="start" />
           </div>
 
           {/* Image side */}
           <div className={`reveal ${isAr ? 'reveal-right' : 'reveal-left'}`}>
             <div className="relative">
               {/* Team consultation image */}
-              <div className="relative rounded-2xl overflow-hidden aspect-[16/9]">
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] shadow-xl">
                 <Image
                   src="/assets/consultation.jpg"
                   alt={isAr ? 'فريق المحامين' : 'Legal team'}
@@ -50,11 +70,11 @@ export default function Team({ lang }: { lang: Lang }) {
                   quality={90}
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-obsidian/70 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-obsidian/30 via-transparent to-transparent" />
               </div>
 
               {/* Floating digital-law image */}
-              <div className={`absolute -bottom-8 ${isAr ? '-left-6' : '-right-6'} w-36 h-44 rounded-xl overflow-hidden border-2 border-obsidian-border shadow-2xl`}>
+              <div className={`absolute -bottom-8 ${isAr ? '-left-6' : '-right-6'} w-32 h-40 sm:w-36 sm:h-44 rounded-xl overflow-hidden border-4 border-white shadow-2xl`}>
                 <Image
                   src="/assets/digital-law.jpg"
                   alt={isAr ? 'الخدمات الرقمية' : 'Digital services'}

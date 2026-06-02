@@ -3,130 +3,632 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
-  LayoutDashboard, MessageSquare, Settings, LogOut,
-  CheckCircle2, AlertCircle, RefreshCw, Mail, Phone, Globe, Pen, ChevronRight,
+  MessageSquare, Settings, LogOut, Handshake, Plus, Trash2, Save,
+  CheckCircle2, AlertCircle, RefreshCw, Mail, Phone, Globe, Pen,
+  Upload, Loader2, LayoutList, ChevronDown, ArrowUp, ArrowDown, Search, Sparkles, X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { ContactMessage, SiteContent } from '@/lib/supabase'
+import type { ContactMessage, SiteContent, Partner, ContentItem } from '@/lib/supabase'
+import { adminApi, AdminApiError } from '@/lib/adminApi'
+import IconPicker from '@/components/IconPicker'
+import { getIcon } from '@/lib/iconMap'
+import {
+  FIELD_GROUPS, ALL_FIELDS, LIST_SECTIONS, listSectionsForGroup,
+  groupContentItems, groupContentItemsWithDefaults, emptyListSections, newListItemTemplate,
+} from '@/lib/contentSchema'
+import type { ListSection } from '@/lib/contentSchema'
 
-type Tab = 'messages' | 'content' | 'settings'
+type Tab = 'messages' | 'content' | 'lists' | 'partners'
 
-const EDITABLE_SECTIONS = [
-  { section: 'hero',    key: 'phone',   label_ar: 'رقم الهاتف',         label_en: 'Phone Number' },
-  { section: 'hero',    key: 'email',   label_ar: 'البريد الإلكتروني',   label_en: 'Email Address' },
-  { section: 'hero',    key: 'address', label_ar: 'العنوان',              label_en: 'Address' },
-  { section: 'hero',    key: 'hours',   label_ar: 'ساعات العمل',          label_en: 'Working Hours' },
-]
+const C = {
+  bg: '#F8F5EF', panel: '#FFFFFF', soft: '#FBF9F4', border: '#ECE6DA',
+  text: '#1A160F', muted: '#5A5149', dim: '#9B9387',
+  gold: '#C4973A', goldDark: '#A27849', goldSoft: '#F6EFDE',
+}
+
+type ContentRow = { section: string; key: string; value_ar: string; value_en: string }
+type CustomField = {
+  section: string; key: string
+  label_ar: string; label_en: string
+  value_ar: string; value_en: string
+  slot: string; display_order: number
+}
+
+const emptyDraft: Partner = { name: '', logo_url: '', website: '', icon: null, active: true, sort_order: 0 }
+const DEFAULT_CONTENT_ROWS: ContentRow[] = ALL_FIELDS.map(f => ({
+  section: f.section,
+  key: f.key,
+  value_ar: f.def.ar,
+  value_en: f.def.en,
+}))
+
+const GROUP_HELP: Record<string, string> = {
+  nav: 'يظهر في شريط التنقل أعلى الموقع.',
+  hero: 'نصوص البانر + إحصائيات الأرقام (15+، 500+…) — أضف إحصائية من الأسفل.',
+  contactInfo: 'يظهر في قسم التواصل والتذييل.',
+  about: 'نصوص «من نحن» + بطاقة سنوات الخبرة + ركائز (ثقة، احترافية…).',
+  services: 'عناوين قسم «خدماتنا». البطاقات تُدار من هنا مباشرةً بالأسفل.',
+  visionMission: 'يظهر في قسم «الرؤية والرسالة».',
+  whyUs: 'عناوين قسم «لماذا نحن». البطاقات تُدار من هنا مباشرةً بالأسفل.',
+  goals: 'عناوين قسم «أهدافنا الاستراتيجية». البطاقات تُدار من هنا مباشرةً بالأسفل.',
+  team: 'النص الرئيسي لقسم «فريقنا». التخصصات تُدار من هنا مباشرةً بالأسفل.',
+  clients: 'نصوص القسم + أرقام الإحصائيات (500+، 15+…) + قطاعات العملاء.',
+  partners: 'عناوين قسم «شركاء النجاح». الشركاء (شعار/حذف/إضافة) في تبويب «شركاء النجاح».',
+  closing: 'الاقتباس الختامي قبل قسم التواصل.',
+  contact: 'حقول ونصوص نموذج التواصل.',
+  footer: 'يظهر في تذييل الموقع.',
+  chat: 'يظهر في نافذة المساعد الذكي.',
+}
+
+const ADMIN_BACKUP_KEY = 'talha-admin-backup-v1'
 
 export default function AdminDashboard() {
   const router = useRouter()
   const [tab, setTab]             = useState<Tab>('messages')
   const [messages, setMessages]   = useState<ContactMessage[]>([])
-  const [content, setContent]     = useState<SiteContent[]>([])
+  const [content, setContent]     = useState<ContentRow[]>(DEFAULT_CONTENT_ROWS)
+  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+  const [contentSearch, setContentSearch] = useState('')
+  const [items, setItems]         = useState<Record<string, ContentItem[]>>({})
+  const [partners, setPartners]   = useState<Partner[]>([])
+  const [draft, setDraft]         = useState<Partner>(emptyDraft)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [listStatus, setListStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [savingId, setSavingId]   = useState<string | null>(null)
+  const [pStatus, setPStatus]     = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null)
+  const [uploadError, setUploadError]   = useState('')
   const [loading, setLoading]     = useState(true)
+  const [authReady, setAuthReady] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const [isMobile, setIsMobile]   = useState(false)
+  const [backupStatus, setBackupStatus] = useState<'idle' | 'saved' | 'restored' | 'error'>('idle')
+  const [apiError, setApiError]   = useState('')
+  const [seeding, setSeeding]     = useState(false)
+  const [previewSections, setPreviewSections] = useState<Set<string>>(new Set())
+  const [dbKeys, setDbKeys]       = useState<Set<string>>(new Set())
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
 
-  const checkAuth = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { router.push('/admin/login'); return }
-    setUserEmail(session.user.email ?? '')
+  // Centralized handling of API failures: 401/403 means the session is bad.
+  const handleApiError = useCallback((err: unknown) => {
+    if (err instanceof AdminApiError) {
+      setApiError(err.message)
+      if (err.status === 401) {
+        setTimeout(() => router.push('/admin/login'), 1500)
+      }
+    } else {
+      setApiError('تعذّر الاتصال بالخادم — تحقّق من الإنترنت وحاول مجددًا')
+    }
   }, [router])
 
-  const loadMessages = useCallback(async () => {
-    const { data } = await supabase
-      .from('contact_messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
-    setMessages(data ?? [])
+  const splitContent = useCallback((rows: SiteContent[]) => {
+    const map = new Map<string, SiteContent>()
+    rows.forEach(d => map.set(`${d.section}.${d.key}`, d))
+    const merged: ContentRow[] = ALL_FIELDS.map(f => {
+      const row = map.get(`${f.section}.${f.key}`)
+      const ar = row?.value_ar && row.value_ar.trim() ? row.value_ar : f.def.ar
+      const en = row?.value_en && row.value_en.trim() ? row.value_en : f.def.en
+      return { section: f.section, key: f.key, value_ar: ar, value_en: en }
+    })
+    setContent(merged)
+    setDbKeys(new Set(rows.filter(r => !r.is_custom).map(r => `${r.section}.${r.key}`)))
+    const custom: CustomField[] = rows
+      .filter(r => r.is_custom)
+      .map(r => ({
+        section: r.section, key: r.key,
+        label_ar: r.label_ar ?? '', label_en: r.label_en ?? '',
+        value_ar: r.value_ar ?? '', value_en: r.value_en ?? '',
+        slot: r.slot ?? 'body', display_order: r.display_order ?? 0,
+      }))
+      .sort((a, b) => a.display_order - b.display_order)
+    setCustomFields(custom)
   }, [])
 
-  const loadContent = useCallback(async () => {
-    const { data } = await supabase.from('site_content').select('*')
-    if (data) {
-      const merged = EDITABLE_SECTIONS.map(s => {
-        const found = data.find(d => d.section === s.section && d.key === s.key)
-        return found ?? { section: s.section, key: s.key, value_ar: '', value_en: '' }
-      })
-      setContent(merged)
+  const loadAll = useCallback(async () => {
+    setLoading(true)
+    setApiError('')
+    const errors: string[] = []
+
+    const [msgR, cntR, itsR, prtR] = await Promise.allSettled([
+      adminApi.getMessages(),
+      adminApi.getContent(),
+      adminApi.getItems(),
+      adminApi.getPartners(),
+    ])
+
+    if (msgR.status === 'fulfilled') {
+      setMessages((msgR.value.data ?? []) as ContactMessage[])
     } else {
-      setContent(EDITABLE_SECTIONS.map(s => ({ section: s.section, key: s.key, value_ar: '', value_en: '' })))
+      errors.push(msgR.reason instanceof AdminApiError ? msgR.reason.message : 'رسائل التواصل')
     }
+
+    if (cntR.status === 'fulfilled') {
+      splitContent((cntR.value.data ?? []) as SiteContent[])
+    } else {
+      errors.push(cntR.reason instanceof AdminApiError ? cntR.reason.message : 'نصوص الموقع')
+      setContent(DEFAULT_CONTENT_ROWS)
+    }
+
+    if (itsR.status === 'fulfilled') {
+      let grouped = groupContentItems((itsR.value.data ?? []) as ContentItem[])
+      const empty = emptyListSections(grouped)
+      setPreviewSections(new Set(empty))
+
+      if (empty.length > 0) {
+        try {
+          const seedRes = await adminApi.seedDefaults()
+          if (seedRes.inserted > 0) {
+            const reload = await adminApi.getItems()
+            grouped = groupContentItems((reload.data ?? []) as ContentItem[])
+            setPreviewSections(new Set(emptyListSections(grouped)))
+          } else {
+            grouped = groupContentItemsWithDefaults((itsR.value.data ?? []) as ContentItem[])
+          }
+        } catch {
+          grouped = groupContentItemsWithDefaults((itsR.value.data ?? []) as ContentItem[])
+        }
+      }
+      setItems(grouped)
+    } else {
+      errors.push(itsR.reason instanceof AdminApiError ? itsR.reason.message : 'البطاقات')
+      setItems(groupContentItemsWithDefaults([]))
+      setPreviewSections(new Set(LIST_SECTIONS.map(s => s.section)))
+    }
+
+    if (prtR.status === 'fulfilled') {
+      setPartners((prtR.value.data ?? []) as Partner[])
+    } else {
+      const msg = prtR.reason instanceof AdminApiError ? prtR.reason.message : 'الشركاء'
+      errors.push(msg)
+      if (String(msg).includes('permission denied')) {
+        errors.push('شغّل ملف الهجرة 007_table_grants.sql في Supabase SQL Editor')
+      }
+    }
+
+    if (errors.length) setApiError(errors.join(' · '))
     setLoading(false)
-  }, [])
+  }, [splitContent])
+
+  // Session bootstrap: refresh once so a stale token never causes a silent 401.
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      await supabase.auth.refreshSession().catch(() => {})
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!mounted) return
+      if (!session) { router.push('/admin/login'); return }
+      setUserEmail(session.user.email ?? '')
+      setAuthReady(true)
+      const allOpen: Record<string, boolean> = {}
+      FIELD_GROUPS.forEach(g => { allOpen[g.id] = true })
+      setOpenGroups(allOpen)
+      loadAll()
+    })()
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) router.push('/admin/login')
+    })
+    return () => { mounted = false; sub.subscription.unsubscribe() }
+  }, [router, loadAll])
 
   useEffect(() => {
-    checkAuth()
-    loadMessages()
-    loadContent()
-  }, [checkAuth, loadMessages, loadContent])
+    const update = () => setIsMobile(window.innerWidth < 980)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push('/admin/login')
   }
 
+  // ─── Scalar content ───
   const handleContentChange = (section: string, key: string, field: 'value_ar' | 'value_en', val: string) => {
     setContent(prev => prev.map(c =>
       c.section === section && c.key === key ? { ...c, [field]: val } : c
     ))
   }
 
+  const clearField = (section: string, key: string) => {
+    if (!window.confirm('هل أنت متأكد من مسح هذا الحقل؟')) return
+    setContent(prev => prev.map(c =>
+      c.section === section && c.key === key ? { ...c, value_ar: '', value_en: '' } : c,
+    ))
+  }
+
+  const restoreDefaultField = (section: string, key: string) => {
+    const def = ALL_FIELDS.find(f => f.section === section && f.key === key)
+    if (!def) return
+    setContent(prev => prev.map(c =>
+      c.section === section && c.key === key ? { ...c, value_ar: def.def.ar, value_en: def.def.en } : c,
+    ))
+  }
+
   const handleSaveContent = async () => {
     setSaveStatus('saving')
+    setApiError('')
     try {
-      for (const item of content) {
-        await supabase.from('site_content').upsert({
-          section: item.section, key: item.key,
-          value_ar: item.value_ar, value_en: item.value_en,
-        }, { onConflict: 'section,key' })
-      }
+      const scalarRows = content.map(item => ({
+        section: item.section, key: item.key,
+        value_ar: item.value_ar, value_en: item.value_en,
+      }))
+      await adminApi.saveContent(scalarRows)
+      setLastSavedAt(new Date().toLocaleTimeString('ar-SA'))
       setSaveStatus('saved')
+      setDbKeys(new Set(content.map(c => `${c.section}.${c.key}`)))
       setTimeout(() => setSaveStatus('idle'), 3000)
-    } catch {
+    } catch (err) {
+      handleApiError(err)
       setSaveStatus('error')
     }
   }
 
+  // ─── Repeating list items (content_items) CRUD ───
+  const persistPreviewSection = async (section: string) => {
+    const res = await adminApi.seedDefaults(section)
+    if (res.inserted > 0) {
+      const reload = await adminApi.getItems()
+      const grouped = groupContentItems((reload.data ?? []) as ContentItem[])
+      setItems(grouped)
+      setPreviewSections(prev => {
+        const next = new Set(prev)
+        next.delete(section)
+        return next
+      })
+    }
+    return res.inserted
+  }
+
+  const addItem = async (section: string) => {
+    setListStatus('saving')
+    setApiError('')
+    try {
+      if (previewSections.has(section)) {
+        const inserted = await persistPreviewSection(section)
+        if (inserted > 0) {
+          setListStatus('idle')
+          return
+        }
+      }
+
+      const sectionRows = items[section] ?? []
+      const order = sectionRows.length
+      const body = newListItemTemplate(section, order, sectionRows.filter(it => !!it.id))
+      const { data } = await adminApi.addItem(body)
+      const created = data as ContentItem
+      setItems(prev => ({
+        ...prev,
+        [section]: [...(prev[section] ?? []), created],
+      }))
+      setPreviewSections(prev => {
+        const next = new Set(prev)
+        next.delete(section)
+        return next
+      })
+      setListStatus('idle')
+    } catch (err) {
+      handleApiError(err)
+      setListStatus('error')
+    }
+  }
+
+  const patchItem = (section: string, rowKey: string, field: keyof ContentItem, val: ContentItem[keyof ContentItem]) =>
+    setItems(prev => ({
+      ...prev,
+      [section]: prev[section].map((it, i) => {
+        const key = it.id ?? `__row_${i}`
+        return key === rowKey ? { ...it, [field]: val } : it
+      }),
+    }))
+
+  const saveItem = async (item: ContentItem, rowKey: string) => {
+    setSavingId(rowKey)
+    setListStatus('saving')
+    setApiError('')
+    try {
+      if (!item.id) {
+        if (previewSections.has(item.section)) {
+          await persistPreviewSection(item.section)
+        } else {
+          const { data } = await adminApi.addItem({
+            section: item.section,
+            title_ar: item.title_ar, title_en: item.title_en,
+            desc_ar: item.desc_ar, desc_en: item.desc_en,
+            icon: item.icon ?? null, active: item.active ?? true,
+            sort_order: item.sort_order ?? 0,
+          })
+          const created = data as ContentItem
+          setItems(prev => ({
+            ...prev,
+            [item.section]: (prev[item.section] ?? []).map((it, i) =>
+              (it.id ?? `__row_${i}`) === rowKey ? created : it,
+            ),
+          }))
+        }
+      } else {
+        await adminApi.updateItem({
+          id: item.id,
+          title_ar: item.title_ar, title_en: item.title_en,
+          desc_ar: item.desc_ar, desc_en: item.desc_en,
+          icon: item.icon || null, active: item.active, sort_order: item.sort_order,
+        })
+      }
+      setPreviewSections(prev => {
+        const next = new Set(prev)
+        next.delete(item.section)
+        return next
+      })
+      setListStatus('saved')
+      setTimeout(() => setListStatus('idle'), 2500)
+    } catch (err) {
+      handleApiError(err)
+      setListStatus('error')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
+  const deleteItem = async (id?: string) => {
+    if (!id) return
+    if (!window.confirm('هل تريد حذف هذه البطاقة؟ لا يمكن التراجع إلا من النسخة الاحتياطية.')) return
+    try {
+      await adminApi.deleteItem(id)
+      setItems(prev => {
+        const next: Record<string, ContentItem[]> = {}
+        for (const [sec, arr] of Object.entries(prev)) next[sec] = arr.filter(it => it.id !== id)
+        return next
+      })
+    } catch (err) {
+      handleApiError(err)
+    }
+  }
+
+  const moveItem = async (section: string, index: number, dir: 'up' | 'down') => {
+    const arr = [...(items[section] ?? [])]
+    const j = dir === 'up' ? index - 1 : index + 1
+    if (j < 0 || j >= arr.length) return
+    ;[arr[index], arr[j]] = [arr[j], arr[index]]
+    const updated = arr.map((it, i) => ({ ...it, sort_order: i }))
+    setItems(prev => ({ ...prev, [section]: updated }))
+    try {
+      await adminApi.reorderItems(updated.map(it => ({ id: it.id!, sort_order: it.sort_order! })))
+    } catch (err) {
+      handleApiError(err)
+    }
+  }
+
+  const seedDefaults = async () => {
+    setSeeding(true)
+    setApiError('')
+    try {
+      const res = await adminApi.seedDefaults()
+      const its = await adminApi.getItems()
+      const grouped = groupContentItems((its.data ?? []) as ContentItem[])
+      setItems(grouped)
+      setPreviewSections(new Set(emptyListSections(grouped)))
+      alert(res.inserted > 0 ? `تم استيراد ${res.inserted} عنصرًا (الأقسام الفارغة فقط — لم يُحذف شيء موجود).` : 'كل الأقسام تحتوي على بيانات محفوظة بالفعل.')
+    } catch (err) {
+      handleApiError(err)
+    } finally {
+      setSeeding(false)
+    }
+  }
+
   const markRead = async (id: string) => {
-    await supabase.from('contact_messages').update({ read: true }).eq('id', id)
-    setMessages(prev => prev.map(m => m.id === id ? { ...m, read: true } : m))
+    try {
+      await adminApi.markMessageRead(id)
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, read: true } : m))
+    } catch (err) {
+      handleApiError(err)
+    }
+  }
+
+  // ─── Logo upload (via server API, service role) ───
+  const uploadLogo = async (file: File, target: string) => {
+    setUploadError('')
+    setUploadingFor(target)
+    try {
+      const { url } = await adminApi.uploadLogo(file)
+      if (target === 'draft') {
+        setDraft(prev => ({ ...prev, logo_url: url }))
+      } else {
+        patchPartner(target, 'logo_url', url)
+        await adminApi.updatePartner({ ...partners.find(p => p.id === target), id: target, logo_url: url })
+      }
+    } catch (err) {
+      setUploadError(err instanceof AdminApiError ? err.message : 'تعذّر رفع الصورة')
+      if (err instanceof AdminApiError && err.status === 401) handleApiError(err)
+    } finally {
+      setUploadingFor(null)
+    }
+  }
+
+  // ─── Partners CRUD ───
+  const patchPartner = (id: string, field: keyof Partner, val: Partner[keyof Partner]) =>
+    setPartners(prev => prev.map(p => p.id === id ? { ...p, [field]: val } : p))
+
+  const addPartner = async () => {
+    if (!draft.name.trim()) return
+    setPStatus('saving')
+    setApiError('')
+    try {
+      await adminApi.addPartner({
+        name: draft.name.trim(),
+        logo_url: draft.logo_url || null,
+        website: draft.website || null,
+        icon: draft.icon || null,
+        active: draft.active ?? true,
+        sort_order: partners.length,
+      })
+      setDraft(emptyDraft)
+      setPStatus('saved')
+      setTimeout(() => setPStatus('idle'), 2500)
+      const prt = await adminApi.getPartners()
+      setPartners((prt.data ?? []) as Partner[])
+    } catch (err) {
+      handleApiError(err)
+      setPStatus('error')
+    }
+  }
+
+  const savePartner = async (p: Partner) => {
+    if (!p.id) return
+    setPStatus('saving')
+    setApiError('')
+    try {
+      await adminApi.updatePartner({
+        id: p.id, name: p.name, logo_url: p.logo_url || null, website: p.website || null,
+        icon: p.icon || null, active: p.active, sort_order: p.sort_order,
+      })
+      setPStatus('saved')
+      setTimeout(() => setPStatus('idle'), 2500)
+    } catch (err) {
+      handleApiError(err)
+      setPStatus('error')
+    }
+  }
+
+  const deletePartner = async (id?: string) => {
+    if (!id) return
+    if (!window.confirm('هل تريد حذف هذا الشريك؟ لا يمكن التراجع إلا من النسخة الاحتياطية.')) return
+    try {
+      await adminApi.deletePartner(id)
+      setPartners(prev => prev.filter(p => p.id !== id))
+    } catch (err) {
+      handleApiError(err)
+    }
+  }
+
+  const saveBackup = () => {
+    try {
+      const payload = { content, customFields, items, partners, savedAt: new Date().toISOString() }
+      localStorage.setItem(ADMIN_BACKUP_KEY, JSON.stringify(payload))
+      setBackupStatus('saved')
+      setTimeout(() => setBackupStatus('idle'), 2500)
+    } catch {
+      setBackupStatus('error')
+    }
+  }
+
+  const restoreBackup = async () => {
+    const raw = localStorage.getItem(ADMIN_BACKUP_KEY)
+    if (!raw) { alert('لا توجد نسخة احتياطية محفوظة بعد.'); return }
+    if (!window.confirm('هل تريد استعادة النسخة الاحتياطية؟ سيتم استبدال المحتوى الحالي.')) return
+    try {
+      const parsed = JSON.parse(raw) as {
+        content: ContentRow[]; customFields?: CustomField[]
+        items: Record<string, ContentItem[]>; partners: Partner[]
+      }
+      const backupContent = parsed.content ?? []
+      const backupCustom = parsed.customFields ?? []
+      const backupItems = Object.values(parsed.items ?? {}).flat()
+      const backupPartners = parsed.partners ?? []
+
+      const scalarRows = backupContent.map(item => ({
+        section: item.section, key: item.key, value_ar: item.value_ar, value_en: item.value_en,
+      }))
+      const customRows = backupCustom.map(f => ({
+        section: f.section, key: f.key, value_ar: f.value_ar, value_en: f.value_en,
+        label_ar: f.label_ar, label_en: f.label_en, is_custom: true, slot: f.slot, display_order: f.display_order,
+      }))
+      if (scalarRows.length || customRows.length) await adminApi.saveContent([...scalarRows, ...customRows])
+
+      // Replace content_items
+      const currentItems = Object.values(items).flat()
+      await Promise.all(currentItems.map(it => it.id ? adminApi.deleteItem(it.id) : Promise.resolve()))
+      for (const it of backupItems) {
+        await adminApi.addItem({
+          section: it.section, title_ar: it.title_ar, title_en: it.title_en,
+          desc_ar: it.desc_ar, desc_en: it.desc_en, icon: it.icon ?? null,
+          sort_order: it.sort_order ?? 0, active: it.active ?? true,
+        })
+      }
+
+      // Replace partners
+      await Promise.all(partners.map(p => p.id ? adminApi.deletePartner(p.id) : Promise.resolve()))
+      for (const p of backupPartners) {
+        await adminApi.addPartner({
+          name: p.name, logo_url: p.logo_url ?? null, website: p.website ?? null,
+          icon: p.icon ?? null, sort_order: p.sort_order ?? 0, active: p.active ?? true,
+        })
+      }
+
+      await loadAll()
+      setBackupStatus('restored')
+      setTimeout(() => setBackupStatus('idle'), 2500)
+    } catch (err) {
+      handleApiError(err)
+      setBackupStatus('error')
+    }
   }
 
   const unreadCount = messages.filter(m => !m.read).length
 
+  const navItems: Array<{ id: Tab; label: string; Icon: React.ElementType; badge: number }> = [
+    { id: 'messages', label: 'رسائل التواصل', Icon: MessageSquare, badge: unreadCount },
+    { id: 'content',  label: 'نصوص الموقع',  Icon: Settings, badge: 0 },
+    { id: 'lists',    label: 'الأقسام والبطاقات', Icon: LayoutList, badge: 0 },
+    { id: 'partners', label: 'شركاء النجاح',   Icon: Handshake, badge: 0 },
+  ]
+
+  const titleMap: Record<Tab, string> = {
+    messages: 'رسائل التواصل',
+    content: 'تعديل نصوص الموقع',
+    lists: 'الأقسام والبطاقات',
+    partners: 'إدارة شركاء النجاح',
+  }
+
+  const contentGroups = FIELD_GROUPS.filter(group => {
+    const q = contentSearch.trim().toLowerCase()
+    if (!q) return true
+    if (group.titleAr.toLowerCase().includes(q) || group.titleEn.toLowerCase().includes(q)) return true
+    return group.fields.some(f =>
+      f.labelAr.toLowerCase().includes(q) ||
+      f.labelEn.toLowerCase().includes(q) ||
+      `${f.section}.${f.key}`.toLowerCase().includes(q),
+    )
+  })
+
+  if (!authReady) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, fontSize: 14 }}>
+        جارٍ التحقق من الجلسة...
+      </div>
+    )
+  }
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', direction: 'rtl' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100vh', direction: 'rtl' }}>
       {/* Sidebar */}
-      <aside style={{ width: 240, background: '#111111', borderLeft: '1px solid #2A2A2A', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ padding: '24px 20px', borderBottom: '1px solid #2A2A2A' }}>
-          <Image src="/logo.svg" alt="Logo" width={160} height={40} />
-          <p style={{ color: '#4A4440', fontSize: 11, marginTop: 8 }}>لوحة التحكم</p>
+      <aside style={{ width: isMobile ? '100%' : 248, background: C.panel, borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderBottom: isMobile ? `1px solid ${C.border}` : 'none', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '22px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/logo.png" alt="الدكتور طلحة غوث للمحاماة | Dr. Talha Ghawth Law Firm" width={160} height={34} style={{ objectFit: 'contain', width: isMobile ? 130 : 150, height: 'auto' }} />
+          <div style={{ lineHeight: 1.3 }}>
+            <p style={{ color: C.goldDark, fontSize: 11, margin: 0 }}>لوحة التحكم</p>
+          </div>
         </div>
 
-        <nav style={{ padding: '12px 12px', flex: 1 }}>
-          {([
-            { id: 'messages', label: 'رسائل التواصل', Icon: MessageSquare, badge: unreadCount },
-            { id: 'content',  label: 'محتوى الموقع',  Icon: Settings, badge: 0 },
-          ] as Array<{ id: Tab; label: string; Icon: React.ElementType; badge: number }>).map(item => (
+        <nav style={{ padding: '12px', flex: 1, display: isMobile ? 'grid' : 'block', gridTemplateColumns: isMobile ? '1fr 1fr' : undefined, gap: isMobile ? 6 : undefined }}>
+          {navItems.map(item => (
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                 padding: '12px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                background: tab === item.id ? 'rgba(196,151,58,0.1)' : 'transparent',
-                color: tab === item.id ? '#C4973A' : '#8A8480',
-                fontSize: 14, fontFamily: 'Tajawal, Arial, sans-serif',
-                fontWeight: tab === item.id ? 600 : 400,
+                background: tab === item.id ? 'rgba(196,151,58,0.12)' : 'transparent',
+                color: tab === item.id ? C.goldDark : C.muted,
+                fontSize: 14, fontFamily: 'inherit',
+                fontWeight: tab === item.id ? 700 : 500,
                 marginBottom: 2, textAlign: 'right', justifyContent: 'flex-start',
               }}
             >
               <item.Icon size={18} />
               <span style={{ flex: 1 }}>{item.label}</span>
               {item.badge > 0 && (
-                <span style={{ background: '#C4973A', color: '#0A0A0A', borderRadius: 100, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>
+                <span style={{ background: C.gold, color: '#FFFFFF', borderRadius: 100, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>
                   {item.badge}
                 </span>
               )}
@@ -134,16 +636,16 @@ export default function AdminDashboard() {
           ))}
         </nav>
 
-        <div style={{ padding: '12px 12px', borderTop: '1px solid #2A2A2A' }}>
-          <p style={{ fontSize: 11, color: '#4A4440', padding: '4px 14px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</p>
+        <div style={{ padding: '12px', borderTop: `1px solid ${C.border}` }}>
+          <p style={{ fontSize: 11, color: C.dim, padding: '4px 14px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</p>
           <button
             onClick={handleSignOut}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'transparent', color: '#8A8480', fontSize: 14, fontFamily: 'Tajawal, Arial, sans-serif', justifyContent: 'flex-start' }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'transparent', color: C.muted, fontSize: 14, fontFamily: 'inherit', justifyContent: 'flex-start' }}
           >
             <LogOut size={16} />
             تسجيل الخروج
           </button>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, color: '#8A8480', fontSize: 14, textDecoration: 'none', marginTop: 2 }}>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, color: C.muted, fontSize: 14, textDecoration: 'none', marginTop: 2 }}>
             <Globe size={16} />
             عرض الموقع
           </a>
@@ -151,65 +653,81 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, overflow: 'auto', background: '#0A0A0A' }}>
+      <main style={{ flex: 1, overflow: 'auto', background: C.bg }}>
         {/* Top bar */}
-        <div style={{ padding: '16px 28px', borderBottom: '1px solid #2A2A2A', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#111111' }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700 }}>
-            {tab === 'messages' ? 'رسائل التواصل' : 'تعديل محتوى الموقع'}
-          </h1>
+        <div style={{ padding: '16px 28px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: C.panel }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: 0 }}>{titleMap[tab]}</h1>
           <button
-            onClick={tab === 'messages' ? loadMessages : loadContent}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid #2A2A2A', borderRadius: 8, color: '#8A8480', cursor: 'pointer', fontSize: 13, fontFamily: 'Tajawal, Arial, sans-serif' }}
+            onClick={loadAll}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: C.soft, border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}
           >
             <RefreshCw size={14} />
             تحديث
           </button>
         </div>
 
-        <div style={{ padding: 28 }}>
+        <div style={{ padding: isMobile ? 14 : 28 }}>
+          {apiError && (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, color: '#B91C1C', fontSize: 13.5 }}>
+              <AlertCircle size={18} />
+              <span style={{ flex: 1 }}>{apiError}</span>
+              <button onClick={() => setApiError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B91C1C' }}><X size={16} /></button>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+            <button type="button" onClick={saveBackup} style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff', color: C.text, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>
+              حفظ نسخة احتياطية الآن
+            </button>
+            <button type="button" onClick={restoreBackup} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #F59E0B', background: '#FFFBEB', color: '#92400E', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>
+              استعادة النسخة الاحتياطية
+            </button>
+            {backupStatus === 'saved' && <StatusOK text="تم حفظ النسخة الاحتياطية" />}
+            {backupStatus === 'restored' && <StatusOK text="تمت الاستعادة بنجاح" />}
+            {backupStatus === 'error' && <StatusErr text="تعذر تنفيذ العملية" />}
+          </div>
+
           {/* ─── Messages Tab ─── */}
           {tab === 'messages' && (
             <div>
-              {messages.length === 0 && !loading && (
-                <EmptyState text="لا توجد رسائل حتى الآن" />
-              )}
+              {messages.length === 0 && !loading && <EmptyState text="لا توجد رسائل حتى الآن" />}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {messages.map(msg => (
                   <div
                     key={msg.id}
                     style={{
-                      background: msg.read ? '#111111' : 'rgba(196,151,58,0.05)',
-                      border: `1px solid ${msg.read ? '#2A2A2A' : 'rgba(196,151,58,0.2)'}`,
+                      background: msg.read ? C.panel : 'rgba(196,151,58,0.06)',
+                      border: `1px solid ${msg.read ? C.border : 'rgba(196,151,58,0.3)'}`,
                       borderRadius: 12, padding: '16px 20px',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                          <span style={{ fontSize: 15, fontWeight: 700, color: '#F0EAE0' }}>{msg.name}</span>
-                          {!msg.read && <span style={{ background: '#C4973A', color: '#0A0A0A', fontSize: 10, borderRadius: 100, padding: '2px 8px', fontWeight: 700 }}>جديد</span>}
-                          <span style={{ fontSize: 11, color: '#4A4440', marginLeft: 'auto', marginRight: 0 }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{msg.name}</span>
+                          {!msg.read && <span style={{ background: C.gold, color: '#FFFFFF', fontSize: 10, borderRadius: 100, padding: '2px 8px', fontWeight: 700 }}>جديد</span>}
+                          <span style={{ fontSize: 11, color: C.dim, marginLeft: 'auto', marginRight: 0 }}>
                             {msg.created_at ? new Date(msg.created_at).toLocaleDateString('ar-SA') : ''}
                           </span>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 10 }}>
                           {msg.phone && (
-                            <a href={`tel:${msg.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#8A8480', fontSize: 13, textDecoration: 'none' }}>
+                            <a href={`tel:${msg.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.muted, fontSize: 13, textDecoration: 'none' }}>
                               <Phone size={13} />{msg.phone}
                             </a>
                           )}
                           {msg.email && (
-                            <a href={`mailto:${msg.email}`} style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#8A8480', fontSize: 13, textDecoration: 'none' }}>
+                            <a href={`mailto:${msg.email}`} style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.muted, fontSize: 13, textDecoration: 'none' }}>
                               <Mail size={13} />{msg.email}
                             </a>
                           )}
                         </div>
-                        <p style={{ color: '#B8AFA6', fontSize: 14, lineHeight: 1.6, margin: 0 }}>{msg.message}</p>
+                        <p style={{ color: C.text, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{msg.message}</p>
                       </div>
                       {!msg.read && msg.id && (
                         <button
                           onClick={() => markRead(msg.id!)}
-                          style={{ flexShrink: 0, padding: '6px 14px', background: 'rgba(196,151,58,0.1)', border: '1px solid rgba(196,151,58,0.2)', borderRadius: 8, color: '#C4973A', fontSize: 12, cursor: 'pointer', fontFamily: 'Tajawal, Arial, sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}
+                          style={{ flexShrink: 0, padding: '6px 14px', background: 'rgba(196,151,58,0.1)', border: '1px solid rgba(196,151,58,0.3)', borderRadius: 8, color: C.goldDark, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}
                         >
                           <CheckCircle2 size={13} />
                           تمييز كمقروء
@@ -222,42 +740,299 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ─── Content Tab ─── */}
+          {/* ─── Content Tab (all scalar text + inline cards + custom fields) ─── */}
           {tab === 'content' && (
             <div>
-              <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 24, fontSize: 13, color: '#D5B874' }}>
-                💡 يمكنك تعديل معلومات التواصل التي تظهر في الموقع من هنا. اضغط "حفظ التعديلات" بعد الانتهاء.
+              <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 16, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7, maxWidth: 920 }}>
+                النصوص والأرقام هنا مطابقة للموقع. الأقسام الفارغة تُعرض تلقائيًا كما على الموقع؛ زر <strong>«إضافة…»</strong> يحفظها ثم يضيف عناصر جديدة <strong>دون حذف</strong> القديمة. بعد الحفظ افتح «عرض الموقع» أو حدّث (F5).
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 700 }}>
-                {EDITABLE_SECTIONS.map(section => {
-                  const item = content.find(c => c.section === section.section && c.key === section.key)
+              <div style={{ maxWidth: 920, marginBottom: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => { const a: Record<string, boolean> = {}; FIELD_GROUPS.forEach(g => { a[g.id] = true }); setOpenGroups(a) }} style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  فتح كل الأقسام
+                </button>
+                <button type="button" onClick={() => setOpenGroups({})} style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  إغلاق الكل
+                </button>
+                <button type="button" onClick={seedDefaults} disabled={seeding} style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${C.gold}`, background: '#FFFBEB', color: C.goldDark, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>
+                  {seeding ? 'جارٍ الاستيراد...' : 'استيراد بطاقات افتراضية (للأقسام الفارغة)'}
+                </button>
+              </div>
+
+              <div style={{ maxWidth: 920, marginBottom: 14 }}>
+                <div style={{ position: 'relative' }}>
+                  <Search size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: C.dim }} />
+                  <input
+                    value={contentSearch}
+                    onChange={e => setContentSearch(e.target.value)}
+                    placeholder="ابحث عن القسم أو الحقل (مثال: من نحن / title / contact)"
+                    style={{ ...adminInputStyle, paddingRight: 36 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 920 }}>
+                {contentGroups.length === 0 && (
+                  <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, color: C.muted, fontSize: 13 }}>
+                    لا توجد نتائج مطابقة للبحث.
+                  </div>
+                )}
+                {contentGroups.map(group => {
+                  const isOpen = openGroups[group.id] ?? false
+                  const inlineLists = listSectionsForGroup(group.id)
+                  const cardCount = inlineLists.reduce((n, s) => n + (items[s.section]?.length ?? 0), 0)
+                  const partnerCount = group.id === 'partners' ? partners.length : 0
                   return (
-                    <div key={`${section.section}_${section.key}`} style={{ background: '#191919', border: '1px solid #2A2A2A', borderRadius: 12, padding: '20px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                        <Pen size={14} className="text-gold" style={{ color: '#C4973A', flexShrink: 0 }} />
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#F0EAE0' }}>{section.label_ar}</span>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 11, color: '#8A8480', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>بالعربية</label>
-                          <input
-                            value={item?.value_ar ?? ''}
-                            onChange={e => handleContentChange(section.section, section.key, 'value_ar', e.target.value)}
-                            style={adminInputStyle}
-                            dir="rtl"
-                            placeholder={section.label_ar}
-                          />
+                    <div key={group.id} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                      <button
+                        onClick={() => setOpenGroups(prev => ({ ...prev, [group.id]: !isOpen }))}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px', border: 'none', background: isOpen ? C.goldSoft : C.panel, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'right' }}
+                      >
+                        <span style={{ width: 4, height: 20, borderRadius: 4, background: C.gold }} />
+                        <span style={{ flex: 1, fontSize: 15, fontWeight: 800, color: C.text }}>{group.titleAr}</span>
+                        <span style={{ fontSize: 12, color: C.dim }}>
+                          {group.fields.length} حقل
+                          {cardCount > 0 ? ` · ${cardCount} عنصر` : ''}
+                          {partnerCount > 0 ? ` · ${partnerCount} شريك` : ''}
+                        </span>
+                        <ChevronDown size={18} style={{ color: C.muted, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                      </button>
+
+                      {isOpen && (
+                        <div style={{ padding: '6px 20px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          <span style={{ fontSize: 12, color: C.muted }}>{GROUP_HELP[group.id] ?? 'هذا القسم يظهر في واجهة الموقع.'}</span>
+
+                          {group.fields.map(field => {
+                            const item = content.find(c => c.section === field.section && c.key === field.key)
+                            return (
+                              <div key={`${field.section}_${field.key}`} style={{ background: C.soft, border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 18px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                  <Pen size={13} style={{ color: C.gold, flexShrink: 0 }} />
+                                  <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{field.labelAr}</span>
+                                  {dbKeys.has(`${field.section}.${field.key}`) && (
+                                    <span style={{ fontSize: 10, background: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: 100, fontWeight: 700 }}>محفوظ</span>
+                                  )}
+                                  <span style={{ marginInlineStart: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <button type="button" onClick={() => restoreDefaultField(field.section, field.key)} style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff', color: C.muted, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                      استعادة النص الافتراضي
+                                    </button>
+                                    <button type="button" onClick={() => clearField(field.section, field.key)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>
+                                      مسح الحقل
+                                    </button>
+                                  </span>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: 11, color: C.muted, marginBottom: 6, letterSpacing: '0.05em' }}>بالعربية</label>
+                                    {field.multiline ? (
+                                      <textarea value={item?.value_ar ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)} style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6 }} dir="rtl" placeholder={field.labelAr} />
+                                    ) : (
+                                      <input value={item?.value_ar ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)} style={adminInputStyle} dir="rtl" placeholder={field.labelAr} />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: 11, color: C.muted, marginBottom: 6, letterSpacing: '0.05em' }}>English</label>
+                                    {field.multiline ? (
+                                      <textarea value={item?.value_en ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)} style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6 }} dir="ltr" placeholder={field.labelEn} />
+                                    ) : (
+                                      <input value={item?.value_en ?? ''} onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)} style={adminInputStyle} dir="ltr" placeholder={field.labelEn} />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+
+                          {group.id === 'partners' && (
+                            <div style={{ marginTop: 8, padding: 16, background: C.soft, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+                              <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: C.text }}>
+                                شركاء النجاح ({partners.length}) — يظهرون في الشريط المتحرك
+                              </p>
+                              {partners.length === 0 && (
+                                <p style={{ margin: '0 0 10px', fontSize: 12, color: C.muted }}>لا يوجد شركاء بعد. أضفهم من تبويب «شركاء النجاح» أو بالزر أدناه.</p>
+                              )}
+                              {partners.slice(0, 6).map(p => (
+                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${C.border}` }}>
+                                  {p.logo_url
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    ? <img src={p.logo_url} alt="" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                                    : <span style={{ width: 32, height: 32, borderRadius: 8, background: C.goldSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{p.name.charAt(0)}</span>}
+                                  <span style={{ flex: 1, fontSize: 13 }}>{p.name}</span>
+                                  <span style={{ fontSize: 11, color: p.active ? '#166534' : C.dim }}>{p.active ? 'ظاهر' : 'مخفي'}</span>
+                                </div>
+                              ))}
+                              {partners.length > 6 && <p style={{ fontSize: 11, color: C.dim, margin: '8px 0 0' }}>+ {partners.length - 6} شركاء آخرين في التبويب المخصص</p>}
+                              <button type="button" onClick={() => setTab('partners')} style={{ marginTop: 12, padding: '8px 14px', borderRadius: 8, border: `1px solid ${C.gold}`, background: '#fff', color: C.goldDark, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                إضافة / تعديل الشركاء
+                              </button>
+                            </div>
+                          )}
+
+                          {inlineLists.map(sec => (
+                            <div key={sec.section} style={{ marginTop: 6 }}>
+                              <ListSectionEditor
+                                sec={sec}
+                                rows={items[sec.section] ?? []}
+                                isPreview={previewSections.has(sec.section)}
+                                isMobile={isMobile}
+                                savingId={savingId}
+                                onAdd={() => addItem(sec.section)}
+                                onPatch={(id, f, v) => patchItem(sec.section, id, f, v)}
+                                onSave={(item, key) => saveItem(item, key)}
+                                onDelete={deleteItem}
+                                onMove={(index, dir) => moveItem(sec.section, index, dir)}
+                              />
+                            </div>
+                          ))}
+                          {inlineLists.length > 0 && (
+                            <div style={{ height: 20, marginTop: 6 }}>
+                              {listStatus === 'saved' && <StatusOK text="تم الحفظ — حدّث الموقع" />}
+                              {listStatus === 'error' && <StatusErr text="حدث خطأ" />}
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 11, color: '#8A8480', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>English</label>
-                          <input
-                            value={item?.value_en ?? ''}
-                            onChange={e => handleContentChange(section.section, section.key, 'value_en', e.target.value)}
-                            style={adminInputStyle}
-                            dir="ltr"
-                            placeholder={section.label_en}
-                          />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div style={{ position: 'sticky', bottom: 0, marginTop: 24, padding: '14px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button onClick={handleSaveContent} disabled={saveStatus === 'saving'} style={goldBtn(saveStatus === 'saving')}>
+                  <Save size={16} />
+                  {saveStatus === 'saving' ? 'جارٍ الحفظ...' : 'حفظ كل التعديلات'}
+                </button>
+                {saveStatus === 'saved' && (
+                  <StatusOK text={lastSavedAt ? `تم الحفظ — حدّث الموقع لرؤية التغيير (${lastSavedAt})` : 'تم الحفظ بنجاح'} />
+                )}
+                {saveStatus === 'error' && <StatusErr text="حدث خطأ أثناء الحفظ" />}
+                <a href="/ar" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: C.goldDark, fontWeight: 700, textDecoration: 'none' }}>
+                  عرض الموقع بعد الحفظ ↗
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Lists Tab (repeating cards) ─── */}
+          {tab === 'lists' && (
+            <div>
+              <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 18, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7, maxWidth: 920 }}>
+                هنا تضيف وتحذف وترتّب بطاقات الأقسام (الخدمات، لماذا نحن، الأهداف، التخصصات، القطاعات). اضغط «حفظ» بعد تعديل أي بطاقة. إذا كانت الأقسام فارغة، استورد البيانات الافتراضية.
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <button type="button" onClick={seedDefaults} disabled={seeding} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: '#fff', border: `1px solid ${C.gold}`, borderRadius: 10, color: C.goldDark, fontSize: 13.5, fontWeight: 700, cursor: seeding ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                  {seeding ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                  استيراد البيانات الافتراضية (للأقسام الفارغة)
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 920 }}>
+                {LIST_SECTIONS.map(sec => (
+                  <ListSectionEditor
+                    key={sec.section}
+                    sec={sec}
+                    rows={items[sec.section] ?? []}
+                    isPreview={previewSections.has(sec.section)}
+                    isMobile={isMobile}
+                    savingId={savingId}
+                    onAdd={() => addItem(sec.section)}
+                    onPatch={(id, field, val) => patchItem(sec.section, id, field, val)}
+                    onSave={(item, key) => saveItem(item, key)}
+                    onDelete={deleteItem}
+                    onMove={(index, dir) => moveItem(sec.section, index, dir)}
+                  />
+                ))}
+              </div>
+
+              <div style={{ marginTop: 18, height: 22 }}>
+                {listStatus === 'saved' && <StatusOK text="تم الحفظ" />}
+                {listStatus === 'error' && <StatusErr text="حدث خطأ" />}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Partners Tab ─── */}
+          {tab === 'partners' && (
+            <div>
+              <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 24, fontSize: 13, color: C.goldDark, maxWidth: 820 }}>
+                أضف شعارات شركاء النجاح. ارفع شعارًا من جهازك، أو اختر أيقونة بديلة، وضع رابط الموقع (أي رابط — سنضيف https تلقائيًا).
+              </div>
+
+              {/* Add new partner */}
+              <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 22, maxWidth: 820 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Plus size={16} style={{ color: C.gold }} /> إضافة شريك جديد
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                  <Field label="اسم الشريك *">
+                    <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} style={adminInputStyle} placeholder="اسم الشريك" />
+                  </Field>
+                  <Field label="شعار الشريك (صورة JPG / PNG)">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {draft.logo_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={draft.logo_url} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'contain', border: `1px solid ${C.border}`, background: '#fff', flexShrink: 0 }} />
+                        : null}
+                      <UploadButton uploading={uploadingFor === 'draft'} onPick={file => uploadLogo(file, 'draft')} hasImage={!!draft.logo_url} />
+                      {draft.logo_url && (
+                        <button type="button" onClick={() => setDraft({ ...draft, logo_url: '' })} style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>إزالة</button>
+                      )}
+                    </div>
+                  </Field>
+                  <Field label="رابط الموقع (اختياري)">
+                    <input value={draft.website ?? ''} onChange={e => setDraft({ ...draft, website: e.target.value })} style={adminInputStyle} placeholder="example.com أو https://..." dir="ltr" />
+                  </Field>
+                  <Field label="أيقونة بديلة (إن لم يوجد شعار)">
+                    <IconPicker value={draft.icon} onChange={icon => setDraft({ ...draft, icon })} />
+                  </Field>
+                </div>
+                {uploadError && <div style={{ marginTop: 12 }}><StatusErr text={uploadError} /></div>}
+                <div style={{ marginTop: 16 }}>
+                  <button onClick={addPartner} disabled={!draft.name.trim() || pStatus === 'saving'} style={goldBtn(!draft.name.trim() || pStatus === 'saving')}>
+                    <Plus size={16} /> إضافة
+                  </button>
+                </div>
+              </div>
+
+              {/* Existing partners */}
+              {partners.length === 0 && <EmptyState text="لا يوجد شركاء بعد — أضف أول شريك من الأعلى" />}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 820 }}>
+                {partners.map(p => {
+                  const Icon = getIcon(p.icon)
+                  return (
+                    <div key={p.id} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, opacity: p.active ? 1 : 0.6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: 12, background: C.goldSoft, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                          {p.logo_url
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={p.logo_url} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                            : Icon ? <Icon size={24} style={{ color: C.goldDark }} />
+                            : <span style={{ color: C.goldDark, fontWeight: 800, fontSize: 20 }}>{p.name.charAt(0)}</span>}
+                        </div>
+                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, minWidth: 240 }}>
+                          <input value={p.name} onChange={e => patchPartner(p.id!, 'name', e.target.value)} style={adminInputStyle} placeholder="اسم الشريك" />
+                          <UploadButton uploading={uploadingFor === p.id} onPick={file => uploadLogo(file, p.id!)} hasImage={!!p.logo_url} />
+                          <input value={p.website ?? ''} onChange={e => patchPartner(p.id!, 'website', e.target.value)} style={adminInputStyle} placeholder="example.com أو https://..." dir="ltr" />
+                          <IconPicker value={p.icon} onChange={icon => patchPartner(p.id!, 'icon', icon)} />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={!!p.active} onChange={e => patchPartner(p.id!, 'active', e.target.checked)} style={{ accentColor: C.gold, width: 16, height: 16 }} />
+                          ظاهر في الموقع
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted }}>
+                          الترتيب
+                          <input type="number" value={p.sort_order ?? 0} onChange={e => patchPartner(p.id!, 'sort_order', Number(e.target.value))} style={{ ...adminInputStyle, width: 70, padding: '6px 10px' }} />
+                        </label>
+                        <div style={{ marginInlineStart: 'auto', display: 'flex', gap: 8 }}>
+                          <button onClick={() => savePartner(p)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'rgba(196,151,58,0.12)', border: '1px solid rgba(196,151,58,0.3)', borderRadius: 8, color: C.goldDark, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                            <Save size={14} /> حفظ
+                          </button>
+                          <button onClick={() => deletePartner(p.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, color: '#DC2626', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            <Trash2 size={14} /> حذف
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -265,51 +1040,205 @@ export default function AdminDashboard() {
                 })}
               </div>
 
-              <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button
-                  onClick={handleSaveContent}
-                  disabled={saveStatus === 'saving'}
-                  style={{
-                    padding: '14px 32px', background: 'linear-gradient(135deg, #C4973A, #D5B874)',
-                    color: '#0A0A0A', fontWeight: 700, fontSize: 15, borderRadius: 10, border: 'none',
-                    cursor: saveStatus === 'saving' ? 'not-allowed' : 'pointer',
-                    opacity: saveStatus === 'saving' ? 0.7 : 1,
-                    fontFamily: 'Tajawal, Arial, sans-serif',
-                  }}
-                >
-                  {saveStatus === 'saving' ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
-                </button>
-
-                {saveStatus === 'saved' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#4ade80', fontSize: 13 }}>
-                    <CheckCircle2 size={16} /> تم الحفظ بنجاح
-                  </div>
-                )}
-                {saveStatus === 'error' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171', fontSize: 13 }}>
-                    <AlertCircle size={16} /> حدث خطأ أثناء الحفظ
-                  </div>
-                )}
+              <div style={{ marginTop: 18, height: 22 }}>
+                {pStatus === 'saved' && <StatusOK text="تم الحفظ" />}
+                {pStatus === 'error' && <StatusErr text="حدث خطأ" />}
               </div>
             </div>
           )}
         </div>
       </main>
+
     </div>
   )
 }
 
+function ListSectionEditor({
+  sec, rows, isPreview, isMobile, savingId, onAdd, onPatch, onSave, onDelete, onMove,
+}: {
+  sec: ListSection
+  rows: ContentItem[]
+  isPreview: boolean
+  isMobile: boolean
+  savingId: string | null
+  onAdd: () => void
+  onPatch: (rowKey: string, field: keyof ContentItem, val: ContentItem[keyof ContentItem]) => void
+  onSave: (item: ContentItem, rowKey: string) => void
+  onDelete: (id?: string) => void
+  onMove: (index: number, dir: 'up' | 'down') => void
+}) {
+  const savedCount = rows.filter(r => r.id).length
+  const countLabel = isPreview && savedCount === 0
+    ? `${rows.length} عنصر (معاينة — مثل الموقع)`
+    : `${rows.length} عنصر`
+
+  return (
+    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <span style={{ width: 4, height: 20, borderRadius: 4, background: C.gold }} />
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: C.text, margin: 0, flex: 1 }}>{sec.titleAr}</h3>
+        <span style={{ fontSize: 12, color: C.dim }}>{countLabel}</span>
+      </div>
+      <p style={{ fontSize: 12.5, color: C.muted, margin: '0 0 8px 14px' }}>{sec.hintAr}</p>
+      {isPreview && (
+        <p style={{ fontSize: 12, color: C.goldDark, margin: '0 0 12px 14px', background: C.goldSoft, padding: '8px 12px', borderRadius: 8 }}>
+          هذه العناصر تظهر على الموقع من النصوص الافتراضية. اضغط «{sec.addLabelAr}» أو «حفظ» لنشرها في قاعدة البيانات دون حذف ما هو محفوظ مسبقًا.
+        </p>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {rows.map((item, index) => {
+          const rowKey = item.id ?? `__row_${index}`
+          const Icon = getIcon(item.icon)
+          const isStat = sec.variant === 'stat'
+          const isChip = sec.variant === 'chip'
+          const preview = isStat
+            ? `${item.title_ar || '—'} · ${item.desc_ar || '—'}`
+            : (item.title_ar || (isChip ? 'عنصر جديد' : 'بطاقة جديدة'))
+          return (
+            <div key={rowKey} style={{ background: C.soft, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, opacity: item.active ? 1 : 0.6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                {!isStat && (
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: C.goldSoft, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {Icon ? <Icon size={20} style={{ color: C.goldDark }} /> : <span style={{ color: C.dim, fontSize: 18 }}>—</span>}
+                  </div>
+                )}
+                {isStat && (
+                  <div style={{ fontSize: 22, fontWeight: 900, color: C.goldDark, minWidth: 48 }}>{item.title_ar || '—'}</div>
+                )}
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1 }}>{preview}</span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button onClick={() => onMove(index, 'up')} disabled={index === 0} title="أعلى" style={iconBtn(index === 0)}><ArrowUp size={15} /></button>
+                  <button onClick={() => onMove(index, 'down')} disabled={index === rows.length - 1} title="أسفل" style={iconBtn(index === rows.length - 1)}><ArrowDown size={15} /></button>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>{isStat ? 'الرقم (عربي) — مثل 15+' : 'العنوان (عربي)'}</label>
+                  <input value={item.title_ar} onChange={e => onPatch(rowKey, 'title_ar', e.target.value)} style={adminInputStyle} dir="rtl" placeholder={isStat ? '15+' : 'العنوان بالعربية'} />
+                </div>
+                <div>
+                  <label style={labelStyle}>{isStat ? 'Number (EN)' : 'Title (English)'}</label>
+                  <input value={item.title_en} onChange={e => onPatch(rowKey, 'title_en', e.target.value)} style={adminInputStyle} dir="ltr" placeholder={isStat ? '15+' : 'Title in English'} />
+                </div>
+                {(sec.hasDesc || isStat) && (
+                  <>
+                    <div>
+                      <label style={labelStyle}>{isStat ? 'الوصف (عربي) — مثل سنة خبرة' : 'الوصف (عربي)'}</label>
+                      <textarea value={item.desc_ar} onChange={e => onPatch(rowKey, 'desc_ar', e.target.value)} style={{ ...adminInputStyle, minHeight: 70, resize: 'vertical', lineHeight: 1.6 }} dir="rtl" placeholder={isStat ? 'سنة خبرة' : 'الوصف بالعربية'} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>{isStat ? 'Description (EN)' : 'Description (EN)'}</label>
+                      <textarea value={item.desc_en} onChange={e => onPatch(rowKey, 'desc_en', e.target.value)} style={{ ...adminInputStyle, minHeight: 70, resize: 'vertical', lineHeight: 1.6 }} dir="ltr" placeholder={isStat ? 'Years Experience' : 'Description in English'} />
+                    </div>
+                  </>
+                )}
+                {!isStat && (
+                  <div>
+                    <label style={labelStyle}>الأيقونة</label>
+                    <IconPicker value={item.icon} onChange={icon => onPatch(rowKey, 'icon', icon)} recommended={sec.recommendedIcons} />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={!!item.active} onChange={e => onPatch(rowKey, 'active', e.target.checked)} style={{ accentColor: C.gold, width: 16, height: 16 }} />
+                  ظاهر في الموقع
+                </label>
+                <div style={{ marginInlineStart: 'auto', display: 'flex', gap: 8 }}>
+                  <button onClick={() => onSave(item, rowKey)} disabled={savingId === rowKey} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'rgba(196,151,58,0.12)', border: '1px solid rgba(196,151,58,0.3)', borderRadius: 8, color: C.goldDark, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                    {savingId === rowKey ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {item.id ? 'حفظ' : 'حفظ في الموقع'}
+                  </button>
+                  <button onClick={() => onDelete(item.id)} disabled={!item.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, color: '#DC2626', fontSize: 13, cursor: item.id ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: item.id ? 1 : 0.45 }}>
+                    <Trash2 size={14} /> حذف
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <button onClick={onAdd} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: '#FFFFFF', border: `1px dashed ${C.gold}`, borderRadius: 10, color: C.goldDark, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <Plus size={16} /> {sec.addLabelAr}
+      </button>
+    </div>
+  )
+}
+
+function UploadButton({ uploading, onPick, hasImage }: { uploading: boolean; onPick: (file: File) => void; hasImage: boolean }) {
+  return (
+    <label
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        padding: '10px 14px', background: '#FFFFFF', border: `1px dashed ${C.gold}`,
+        borderRadius: 8, color: C.goldDark, fontSize: 13, fontWeight: 600,
+        cursor: uploading ? 'wait' : 'pointer', fontFamily: 'inherit', textAlign: 'center',
+      }}
+    >
+      {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+      {uploading ? 'جارٍ الرفع...' : hasImage ? 'تغيير الشعار' : 'رفع شعار'}
+      <input
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+        style={{ display: 'none' }}
+        disabled={uploading}
+        onChange={e => { const f = e.target.files?.[0]; if (f) onPick(f); e.target.value = '' }}
+      />
+    </label>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 11, color: C.muted, marginBottom: 6, letterSpacing: '0.03em' }}>{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function StatusOK({ text }: { text: string }) {
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#16a34a', fontSize: 13 }}><CheckCircle2 size={16} /> {text}</div>
+}
+function StatusErr({ text }: { text: string }) {
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#dc2626', fontSize: 13 }}><AlertCircle size={16} /> {text}</div>
+}
+
 function EmptyState({ text }: { text: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: '60px 20px', color: '#4A4440' }}>
-      <MessageSquare size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+    <div style={{ textAlign: 'center', padding: '60px 20px', color: C.dim }}>
+      <MessageSquare size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
       <p style={{ fontSize: 15 }}>{text}</p>
     </div>
   )
 }
 
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 11, color: C.muted, marginBottom: 6, letterSpacing: '0.05em' }
+
 const adminInputStyle: React.CSSProperties = {
-  width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid #2A2A2A',
-  borderRadius: 8, padding: '10px 14px', color: '#F0EAE0', fontSize: 14,
-  outline: 'none', fontFamily: 'Tajawal, Arial, sans-serif', boxSizing: 'border-box',
+  width: '100%', background: '#FFFFFF', border: `1px solid ${C.border}`,
+  borderRadius: 8, padding: '10px 14px', color: C.text, fontSize: 14,
+  outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+}
+
+function iconBtn(disabled: boolean): React.CSSProperties {
+  return {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30,
+    background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8,
+    color: disabled ? C.dim : C.muted, cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1,
+  }
+}
+
+function goldBtn(disabled: boolean): React.CSSProperties {
+  return {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: '13px 30px', background: 'linear-gradient(135deg, #C4973A, #D5B874)',
+    color: '#1A160F', fontWeight: 700, fontSize: 15, borderRadius: 10, border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
+    fontFamily: 'inherit',
+  }
 }

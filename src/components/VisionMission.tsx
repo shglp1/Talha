@@ -1,76 +1,97 @@
 'use client'
-import Image from 'next/image'
-import { Eye, Target } from 'lucide-react'
+import { Telescope, Compass, Scale } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
+import { useContent } from '@/components/ContentProvider'
+import SectionExtras from '@/components/SectionExtras'
 
 export default function VisionMission({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
+  const { ov } = useContent()
 
   return (
-    <section id="vision" className="section-padding bg-obsidian relative overflow-hidden" dir={tr.dir}>
-      {/* Background image with overlay */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/assets/scales-golden.jpg"
-          alt="scales of justice"
-          fill
-          quality={80}
-          className="object-cover object-center opacity-8"
-        />
-        <div className="absolute inset-0 bg-obsidian/92" />
-      </div>
-
+    <section
+      id="vision"
+      className="section-padding relative overflow-hidden"
+      dir={tr.dir}
+      style={{ background: 'linear-gradient(135deg, #1A160F 0%, #25201733 0%, #1F1A12 55%, #15110B 100%)' }}
+    >
       {/* Decorative gold orbs */}
-      <div className="absolute top-1/4 start-1/4 w-96 h-96 rounded-full bg-gold/5 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 end-1/4 w-80 h-80 rounded-full bg-gold/4 blur-3xl pointer-events-none" />
+      <div className="absolute top-0 start-0 w-[28rem] h-[28rem] rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(196,151,58,0.18), transparent 70%)' }} />
+      <div className="absolute bottom-0 end-0 w-[24rem] h-[24rem] rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(196,151,58,0.14), transparent 70%)' }} />
+      {/* Top & bottom gold hairlines to frame the band */}
+      <div className="absolute top-0 inset-x-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(196,151,58,0.6), transparent)' }} />
+      <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(196,151,58,0.6), transparent)' }} />
 
       <div className="relative z-10 section-container">
         {/* Header */}
-        <div className="text-center mb-16 reveal">
-          <span className="section-badge mb-6 inline-flex">{tr.visionMission.badge}</span>
+        <div className="text-center mb-12 sm:mb-14 reveal">
+          <span
+            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold tracking-wide"
+            style={{ border: '1px solid rgba(196,151,58,0.40)', background: 'rgba(196,151,58,0.12)', color: '#E2C485' }}
+          >
+            {ov('visionMission', 'badge', tr.visionMission.badge)}
+          </span>
+          <div className="mx-auto mt-5 h-[3px] w-16 rounded-full" style={{ background: 'linear-gradient(90deg, #C4973A, #E2C485)' }} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Vision — Hub — Mission */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] items-stretch gap-6 lg:gap-0">
           {/* Vision */}
-          <div className="glass-card p-10 reveal reveal-left">
-            <div className="flex items-start gap-5 mb-6">
-              <div className="w-14 h-14 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center flex-shrink-0">
-                <Eye size={26} className="text-gold" />
+          <article
+            className="reveal reveal-left flex flex-col rounded-3xl p-7 sm:p-9 lg:p-10"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(196,151,58,0.22)', backdropFilter: 'blur(6px)' }}
+          >
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(196,151,58,0.14)', border: '1px solid rgba(196,151,58,0.35)' }}>
+                <Telescope size={26} style={{ color: '#E2C485' }} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-cream">{tr.visionMission.visionTitle}</h3>
-                <div className="gold-divider-start mt-2 w-12" />
+                <h3 className="text-2xl sm:text-3xl font-black leading-none" style={{ color: '#FFFFFF' }}>{ov('visionMission', 'visionTitle', tr.visionMission.visionTitle)}</h3>
+                <div className="mt-2.5 h-[3px] w-12 rounded-full" style={{ background: 'linear-gradient(90deg, #C4973A, #E2C485)' }} />
               </div>
             </div>
-            <p className="text-cream-muted text-base leading-relaxed">{tr.visionMission.visionText}</p>
+            <p className="text-[15px] sm:text-base leading-loose" style={{ color: 'rgba(245,239,222,0.86)' }}>{ov('visionMission', 'visionText', tr.visionMission.visionText)}</p>
+          </article>
 
-            {/* Decorative quote mark */}
-            <div className="mt-6 text-6xl font-black text-gold/10 leading-none select-none" aria-hidden>
-              {lang === 'ar' ? '،،' : '"'}
+          {/* Connecting hub */}
+          <div className="flex items-center justify-center lg:flex-col lg:px-3" aria-hidden>
+            <span className="h-px w-12 lg:w-px lg:h-20" style={{ background: 'linear-gradient(to right, transparent, rgba(196,151,58,0.6))' }} />
+            <div className="relative flex-shrink-0 mx-1 lg:mx-0 lg:my-1">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #C4973A, #A27849)', boxShadow: '0 10px 30px rgba(196,151,58,0.40)' }}>
+                <Scale size={26} color="#FFFFFF" />
+              </div>
+              <span className="absolute inset-0 -m-1.5 rounded-full pointer-events-none" style={{ border: '1px solid rgba(196,151,58,0.30)' }} />
             </div>
+            <span className="h-px w-12 lg:w-px lg:h-20" style={{ background: 'linear-gradient(to left, transparent, rgba(196,151,58,0.6))' }} />
           </div>
 
           {/* Mission */}
-          <div className="glass-card p-10 reveal reveal-right">
-            <div className="flex items-start gap-5 mb-6">
-              <div className="w-14 h-14 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center flex-shrink-0">
-                <Target size={26} className="text-gold" />
+          <article
+            className="reveal reveal-right flex flex-col rounded-3xl p-7 sm:p-9 lg:p-10"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(196,151,58,0.22)', backdropFilter: 'blur(6px)' }}
+          >
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(196,151,58,0.14)', border: '1px solid rgba(196,151,58,0.35)' }}>
+                <Compass size={26} style={{ color: '#E2C485' }} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-cream">{tr.visionMission.missionTitle}</h3>
-                <div className="gold-divider-start mt-2 w-12" />
+                <h3 className="text-2xl sm:text-3xl font-black leading-none" style={{ color: '#FFFFFF' }}>{ov('visionMission', 'missionTitle', tr.visionMission.missionTitle)}</h3>
+                <div className="mt-2.5 h-[3px] w-12 rounded-full" style={{ background: 'linear-gradient(90deg, #C4973A, #E2C485)' }} />
               </div>
             </div>
-            <p className="text-cream-muted text-base leading-relaxed">{tr.visionMission.missionText}</p>
-
-            <div className="mt-6 text-6xl font-black text-gold/10 leading-none select-none" aria-hidden>
-              {lang === 'ar' ? '،،' : '"'}
-            </div>
-          </div>
+            <p className="text-[15px] sm:text-base leading-loose" style={{ color: 'rgba(245,239,222,0.86)' }}>{ov('visionMission', 'missionText', tr.visionMission.missionText)}</p>
+          </article>
         </div>
+
+        <SectionExtras section="visionMission" />
       </div>
     </section>
   )

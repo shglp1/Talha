@@ -10,21 +10,26 @@ const config: Config = {
           light:   '#D5B874',
           dark:    '#A27849',
           pale:    '#EDD99A',
+          soft:    '#F6EFDE',
         },
+        /* Light-theme surfaces (names kept for compatibility) */
         obsidian: {
-          DEFAULT: '#0A0A0A',
-          surface: '#111111',
-          card:    '#191919',
-          border:  '#2A2A2A',
+          DEFAULT: '#FFFFFF',
+          surface: '#F8F5EF',
+          card:    '#FFFFFF',
+          border:  '#ECE6DA',
         },
+        /* Ink colours (names kept for compatibility) */
         cream: {
-          DEFAULT: '#F0EAE0',
-          muted:   '#B8AFA6',
+          DEFAULT: '#1A160F',
+          muted:   '#5A5149',
         },
       },
       fontFamily: {
-        arabic:  ['Tajawal', 'sans-serif'],
-        english: ['Arial', 'Helvetica', 'sans-serif'],
+        sans:    ['Thmanyah', 'Segoe UI', 'Tahoma', 'Arial', 'sans-serif'],
+        display: ['Thmanyah Serif', 'Thmanyah', 'Georgia', 'serif'],
+        arabic:  ['Thmanyah', 'sans-serif'],
+        english: ['Segoe UI', 'Helvetica', 'Arial', 'sans-serif'],
       },
       animation: {
         'fade-up':    'fadeUp 0.8s ease forwards',
@@ -52,8 +57,8 @@ const config: Config = {
       },
       backgroundImage: {
         'gold-gradient':  'linear-gradient(135deg, #C4973A 0%, #D5B874 50%, #A27849 100%)',
-        'dark-gradient':  'linear-gradient(180deg, #0A0A0A 0%, #141414 100%)',
-        'hero-gradient':  'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.85) 100%)',
+        'light-gradient': 'linear-gradient(180deg, #FFFFFF 0%, #F8F5EF 100%)',
+        'hero-gradient':  'linear-gradient(to bottom, rgba(255,255,255,0.70) 0%, rgba(248,245,239,0.92) 100%)',
       },
     },
   },

@@ -6,6 +6,7 @@ import WhyUs           from '@/components/WhyUs'
 import StrategicGoals  from '@/components/StrategicGoals'
 import Team            from '@/components/Team'
 import Clients         from '@/components/Clients'
+import Partners        from '@/components/Partners'
 import ClosingStatement from '@/components/ClosingStatement'
 import Contact         from '@/components/Contact'
 import type { Lang }   from '@/lib/translations'
@@ -28,6 +29,7 @@ export default async function HomePage({
       <StrategicGoals lang={l} />
       <Team           lang={l} />
       <Clients        lang={l} />
+      <Partners       lang={l} />
       <ClosingStatement lang={l} />
       <Contact        lang={l} />
     </>

@@ -20,7 +20,7 @@ export const t = {
 
     // Hero
     hero: {
-      badge:    'مكتب قانوني متخصص — جدة، المملكة العربية السعودية',
+      badge:    'مكتب قانوني متخصص — المدينة المنورة، المملكة العربية السعودية',
       title1:   'مكتب',
       title2:   'د. طلحة غوث',
       title3:   'للمحاماة والاستشارات القانونية',
@@ -115,7 +115,7 @@ export const t = {
     // Clients
     clients: {
       badge:   'عملاؤنا',
-      title:   'شركاء النجاح',
+      title:   'القطاعات التي نخدمها',
       body:    'نتشرف بخدمة شريحة واسعة وممتدة من العملاء تشمل: أصحاب السمو، الأفراد، الورثة، نظّار الأوقاف، رواد الأعمال، والشركات المحلية والدولية. نمتد بخدماتنا عبر مختلف القطاعات التجارية، الاستثمارية، العقارية، الخدمية، الفندقية، والوقفية.',
       sectors: [
         { icon: 'Crown',       label: 'أصحاب السمو والذوات' },
@@ -127,6 +127,13 @@ export const t = {
         { icon: 'Hotel',       label: 'القطاع الفندقي والخدمي' },
         { icon: 'BarChart2',   label: 'قطاع الاستثمار والعقار' },
       ],
+    },
+
+    // Partners (logo marquee)
+    partners: {
+      badge:    'شركاء النجاح',
+      title:    'نفخر بثقة شركائنا',
+      subtitle: 'نخبة من الجهات والمؤسسات التي وضعت ثقتها في خدماتنا القانونية',
     },
 
     // Closing Statement
@@ -149,9 +156,9 @@ export const t = {
       sending:     'جارٍ الإرسال...',
       success:     'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.',
       error:       'حدث خطأ، يرجى المحاولة مرة أخرى.',
-      phone:       '+966 54 XXX XXXX',
+      phone:       '+966 14 844 4555',
       email:       'info@talhaghawth.com',
-      address:     'جدة، المملكة العربية السعودية',
+      address:     'طريق الملك عبدالله، الخاتم، المدينة المنورة 42363',
       hours:       'الأحد – الخميس: ٩ص – ٦م',
       mapTitle:    'موقعنا على الخريطة',
     },
@@ -192,7 +199,7 @@ export const t = {
     },
 
     hero: {
-      badge:    'Specialized Law Firm — Jeddah, Saudi Arabia',
+      badge:    'Specialized Law Firm — Madinah, Saudi Arabia',
       title1:   'Dr. Talha Ghawth',
       title2:   '',
       title3:   'Law Office & Legal Consultations',
@@ -280,7 +287,7 @@ export const t = {
 
     clients: {
       badge:   'Our Clients',
-      title:   'Partners in Success',
+      title:   'Sectors We Serve',
       body:    'We are honored to serve a wide range of clients including: Royal Highnesses, individuals, heirs, waqf administrators, entrepreneurs, and local and international companies, across commercial, investment, real estate, hospitality, and endowment sectors.',
       sectors: [
         { icon: 'Crown',       label: 'Royal Highnesses & VIPs' },
@@ -292,6 +299,12 @@ export const t = {
         { icon: 'Hotel',       label: 'Hospitality & Service Sector' },
         { icon: 'BarChart2',   label: 'Investment & Real Estate' },
       ],
+    },
+
+    partners: {
+      badge:    'Success Partners',
+      title:    'Trusted by Our Partners',
+      subtitle: 'A select group of entities and institutions that place their trust in our legal services',
     },
 
     closing: {
@@ -312,9 +325,9 @@ export const t = {
       sending:     'Sending...',
       success:     'Your message has been sent successfully! We will be in touch soon.',
       error:       'An error occurred. Please try again.',
-      phone:       '+966 54 XXX XXXX',
+      phone:       '+966 14 844 4555',
       email:       'info@talhaghawth.com',
-      address:     'Jeddah, Saudi Arabia',
+      address:     'King Abdullah Rd, Al-Khatim, Madinah 42363',
       hours:       'Sun – Thu: 9 AM – 6 PM',
       mapTitle:    'Our Location',
     },

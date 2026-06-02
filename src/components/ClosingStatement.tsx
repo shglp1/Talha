@@ -3,10 +3,13 @@ import Image from 'next/image'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
+import { useContent } from '@/components/ContentProvider'
+import SectionExtras from '@/components/SectionExtras'
 
 export default function ClosingStatement({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
+  const { ov } = useContent()
 
   return (
     <section className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
@@ -34,7 +37,7 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
           </div>
 
           <blockquote className="text-lg sm:text-xl lg:text-2xl text-cream leading-relaxed font-medium mb-8">
-            {tr.closing.quote}
+            {ov('closing', 'quote', tr.closing.quote)}
           </blockquote>
 
           {/* Divider */}
@@ -46,16 +49,13 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
 
           {/* Author */}
           <div>
-            <p className="text-gold font-bold text-lg">{tr.closing.author}</p>
-            <p className="text-cream-muted text-sm mt-1">{tr.closing.role}</p>
+            <p className="text-gold font-bold text-lg">{ov('closing', 'author', tr.closing.author)}</p>
+            <p className="text-cream-muted text-sm mt-1">{ov('closing', 'role', tr.closing.role)}</p>
           </div>
 
           {/* CTA */}
-          <div className="mt-10">
-            <a href="#contact" className="btn-gold">
-              {lang === 'ar' ? 'تواصل معنا الآن' : 'Contact Us Now'}
-            </a>
-          </div>
+          <SectionExtras section="closing" align="center" />
+
         </div>
       </div>
     </section>

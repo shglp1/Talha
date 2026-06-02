@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS site_content (
 
 -- Default contact info
 INSERT INTO site_content (section, key, value_ar, value_en) VALUES
-  ('hero', 'phone',   '+966 54 XXX XXXX',           '+966 54 XXX XXXX'),
-  ('hero', 'email',   'info@talhaghawth.com',        'info@talhaghawth.com'),
-  ('hero', 'address', 'جدة، المملكة العربية السعودية', 'Jeddah, Saudi Arabia'),
-  ('hero', 'hours',   'الأحد – الخميس: ٩ص – ٦م',    'Sun – Thu: 9 AM – 6 PM')
+  ('hero', 'phone',   '+966 14 844 4555',                              '+966 14 844 4555'),
+  ('hero', 'email',   'info@talhaghawth.com',                          'info@talhaghawth.com'),
+  ('hero', 'address', 'طريق الملك عبدالله، الخاتم، المدينة المنورة 42363', 'King Abdullah Rd, Al-Khatim, Madinah 42363'),
+  ('hero', 'hours',   'الأحد – الخميس: ٩ص – ٦م',                        'Sun – Thu: 9 AM – 6 PM')
 ON CONFLICT (section, key) DO NOTHING;
 
 -- RLS: only authenticated admins can read/write

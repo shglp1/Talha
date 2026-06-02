@@ -3,19 +3,27 @@ import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Scale } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
+import { useContent } from '@/components/ContentProvider'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
 export default function Chatbot({ lang }: { lang: Lang }) {
   const tr = t[lang]
+  const { ov } = useContent()
+  const welcome = ov('chat', 'welcome', tr.chat.welcome)
   const [open, setOpen]       = useState(false)
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: tr.chat.welcome },
+    { role: 'assistant', content: welcome },
   ])
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef             = useRef<HTMLDivElement>(null)
   const inputRef              = useRef<HTMLInputElement>(null)
+
+  // Reflect an admin-edited welcome message until the visitor starts chatting.
+  useEffect(() => {
+    setMessages(prev => (prev.length <= 1 ? [{ role: 'assistant', content: welcome }] : prev))
+  }, [welcome])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -61,12 +69,20 @@ export default function Chatbot({ lang }: { lang: Lang }) {
       <button
         onClick={() => setOpen(v => !v)}
         aria-label={open ? 'Close chat' : 'Open chat'}
-        className="fixed bottom-6 end-6 z-50 w-14 h-14 rounded-full btn-gold p-0 flex items-center justify-center shadow-2xl animate-pulse-gold"
-        style={{ minWidth: 56, minHeight: 56 }}
+        className="fixed bottom-6 end-6 z-50 rounded-full flex items-center justify-center animate-pulse-gold transition-transform hover:scale-105 active:scale-95"
+        style={{
+          width: 60,
+          height: 60,
+          padding: 0,
+          background: 'linear-gradient(135deg, #C4973A, #D5B874, #A27849)',
+          boxShadow: '0 8px 28px rgba(196,151,58,0.45)',
+          border: 'none',
+          cursor: 'pointer',
+        }}
       >
         {open
-          ? <X size={22} />
-          : <MessageCircle size={22} />
+          ? <X size={26} color="#FFFFFF" strokeWidth={2.4} />
+          : <MessageCircle size={26} color="#FFFFFF" strokeWidth={2.2} />
         }
       </button>
 
@@ -83,10 +99,10 @@ export default function Chatbot({ lang }: { lang: Lang }) {
             <Scale size={16} className="text-gold" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-cream">{tr.chat.title}</p>
+            <p className="text-sm font-semibold text-cream">{ov('chat', 'title', tr.chat.title)}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-cream-muted">{tr.chat.subtitle}</span>
+              <span className="text-xs text-cream-muted">{ov('chat', 'subtitle', tr.chat.subtitle)}</span>
             </div>
           </div>
           <button onClick={() => setOpen(false)} className="ms-auto text-cream-muted hover:text-cream p-1">
@@ -122,17 +138,17 @@ export default function Chatbot({ lang }: { lang: Lang }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder={tr.chat.placeholder}
+            placeholder={ov('chat', 'placeholder', tr.chat.placeholder)}
             className="form-input text-sm py-2.5 flex-1"
             disabled={loading}
           />
           <button
             onClick={send}
             disabled={loading || !input.trim()}
-            className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center hover:bg-gold hover:text-obsidian transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 text-gold flex items-center justify-center hover:bg-gold hover:text-white hover:border-gold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={tr.chat.send}
           >
-            <Send size={16} className="text-gold" />
+            <Send size={16} />
           </button>
         </div>
       </div>
