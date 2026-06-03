@@ -354,125 +354,74 @@ h1, h2, h3, h4, h5, h6 {
   padding: 24px;
 }
 
-/* ─── Navbar (gold gradient — matches chatbot) ─── */
-.navbar-gold {
-  background: linear-gradient(135deg, #C4973A, #D5B874, #A27849) !important;
-  border-bottom: 1px solid rgba(162, 120, 73, 0.45);
-  box-shadow: 0 4px 24px rgba(26, 22, 15, 0.12);
+/* ─── Navbar: transparent on hero, solid white when scrolled ─── */
+.navbar-hero {
+  background: transparent !important;
+  border-bottom: none;
+  box-shadow: none;
 }
 
-.navbar-gold .nav-link {
-  color: var(--brand-rock);
-}
-.navbar-gold .nav-link:hover {
-  color: var(--brand-rock-dark);
-  background: rgba(100, 106, 109, 0.12);
-}
-
-.navbar-gold .nav-lang {
-  color: var(--brand-rock);
-  border-color: rgba(100, 106, 109, 0.35);
-}
-.navbar-gold .nav-lang:hover {
-  color: var(--brand-rock-dark);
-  border-color: rgba(100, 106, 109, 0.55);
-  background: rgba(100, 106, 109, 0.08);
+.navbar-scrolled {
+  background: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 16px rgba(26, 22, 15, 0.06);
 }
 
-.navbar-gold .nav-menu-btn {
-  color: var(--brand-rock);
-}
-.navbar-gold .nav-menu-btn:hover {
-  color: var(--brand-rock-dark);
-}
-
-.navbar-gold .nav-mobile-link {
-  color: var(--brand-rock);
-}
-.navbar-gold .nav-mobile-link:hover {
-  color: var(--brand-rock-dark);
-  background: rgba(100, 106, 109, 0.1);
-}
-
-.navbar-gold .nav-mobile-lang {
-  color: var(--brand-rock);
-  border-color: rgba(100, 106, 109, 0.35);
-}
-
-.navbar-gold .nav-cta-outline {
-  color: var(--brand-rock) !important;
-  border-color: rgba(100, 106, 109, 0.4) !important;
-  background: rgba(255, 255, 255, 0.25);
-}
-.navbar-gold .nav-cta-outline:hover {
-  background: rgba(255, 255, 255, 0.4);
-  border-color: var(--brand-rock) !important;
-}
-
-/* ─── Footer (gold gradient — matches chatbot) ─── */
+/* ─── Footer (warm cream — original look) ─── */
 .footer-gold {
-  background: linear-gradient(135deg, #C4973A 0%, #D5B874 45%, #A27849 100%);
-  border-top: 1px solid rgba(162, 120, 73, 0.5);
-  color: var(--brand-rock);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
 }
 
 .footer-gold .footer-heading {
-  color: var(--brand-rock-dark);
+  color: var(--text);
 }
 
 .footer-gold .footer-muted,
 .footer-gold .footer-link {
-  color: var(--brand-rock);
+  color: var(--text-muted);
 }
 .footer-gold .footer-link:hover {
-  color: var(--brand-rock-dark);
+  color: var(--text);
 }
 
 .footer-gold .footer-icon-ring {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(100, 106, 109, 0.25);
+  background: var(--gold-soft);
+  border: 1px solid var(--border);
 }
 .footer-gold .footer-icon-ring svg {
-  color: var(--brand-rock);
-}
-
-.footer-gold .footer-bullet {
-  background: rgba(100, 106, 109, 0.45);
-}
-.footer-gold .footer-link:hover .footer-bullet {
-  background: var(--brand-rock-dark);
+  color: var(--gold-dark);
 }
 
 .footer-gold .footer-social-btn {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(100, 106, 109, 0.3);
-  color: var(--brand-rock);
+  background: var(--gold-soft);
+  border: 1px solid var(--border);
+  color: var(--gold-dark);
 }
 .footer-gold .footer-social-btn:hover {
-  background: rgba(255, 255, 255, 0.45);
-  color: var(--brand-rock-dark);
+  background: var(--gold-pale);
+  color: var(--gold-dark);
 }
 
 .footer-gold .footer-divider {
-  border-color: rgba(100, 106, 109, 0.22);
+  border-color: var(--border);
 }
 
 .footer-gold .footer-map-btn {
-  color: var(--brand-rock);
-  border-color: rgba(100, 106, 109, 0.35);
-  background: rgba(255, 255, 255, 0.22);
+  color: var(--text-muted);
+  border-color: var(--border);
+  background: #fff;
 }
 .footer-gold .footer-map-btn:hover {
-  background: rgba(255, 255, 255, 0.4);
-  color: var(--brand-rock-dark);
+  background: var(--gold-soft);
+  color: var(--text);
 }
 
-/* ─── Navbar transition ─── */
-.navbar-scrolled {
-  background: rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 24px rgba(26, 22, 15, 0.06);
+.footer-gold .footer-tagline {
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* ─── Input styles ─── */

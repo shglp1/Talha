@@ -191,10 +191,8 @@ export const FIELD_GROUPS: FieldGroup[] = [
     titleAr: 'التذييل',
     titleEn: 'Footer',
     fields: [
-      { section: 'footer', key: 'tagline',    labelAr: 'النص التعريفي', labelEn: 'Tagline',     multiline: true, def: { ar: t.ar.footer.tagline,    en: t.en.footer.tagline } },
-      { section: 'footer', key: 'quickLinks', labelAr: 'عنوان الروابط', labelEn: 'Quick Links', def: { ar: t.ar.footer.quickLinks, en: t.en.footer.quickLinks } },
-      { section: 'footer', key: 'services',   labelAr: 'عنوان الخدمات', labelEn: 'Services',    def: { ar: t.ar.footer.services,   en: t.en.footer.services } },
-      { section: 'footer', key: 'rights',     labelAr: 'حقوق النشر',    labelEn: 'Rights',      def: { ar: t.ar.footer.rights,     en: t.en.footer.rights } },
+      { section: 'footer', key: 'tagline', labelAr: 'الجملة في التذييل (وسط التذييل)', labelEn: 'Footer tagline (centered)', multiline: true, def: { ar: t.ar.footer.tagline, en: t.en.footer.tagline } },
+      { section: 'footer', key: 'rights',  labelAr: 'حقوق النشر', labelEn: 'Rights', def: { ar: t.ar.footer.rights, en: t.en.footer.rights } },
     ],
   },
   {
