@@ -88,7 +88,7 @@ export default function Partners({ lang }: { lang: Lang }) {
       </div>
 
       {/* Marquee track — full bleed with no clipped edges */}
-      <div className="relative reveal w-full overflow-hidden" dir="ltr">
+      <div className="relative reveal w-full max-w-full overflow-x-clip" dir="ltr">
         <div
           className="marquee"
           style={{

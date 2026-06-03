@@ -18,10 +18,10 @@ export default function VisionMission({ lang }: { lang: Lang }) {
       dir={tr.dir}
       style={{ background: 'linear-gradient(135deg, #1A160F 0%, #25201733 0%, #1F1A12 55%, #15110B 100%)' }}
     >
-      {/* Decorative gold orbs */}
-      <div className="absolute top-0 start-0 w-[28rem] h-[28rem] rounded-full pointer-events-none"
+      {/* Decorative gold orbs — sized down on mobile to avoid overflow */}
+      <div className="absolute top-0 start-0 w-48 sm:w-72 lg:w-[28rem] h-48 sm:h-72 lg:h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(196,151,58,0.18), transparent 70%)' }} />
-      <div className="absolute bottom-0 end-0 w-[24rem] h-[24rem] rounded-full pointer-events-none"
+      <div className="absolute bottom-0 end-0 w-40 sm:w-64 lg:w-[24rem] h-40 sm:h-64 lg:h-[24rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(196,151,58,0.14), transparent 70%)' }} />
       {/* Top & bottom gold hairlines to frame the band */}
       <div className="absolute top-0 inset-x-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(196,151,58,0.6), transparent)' }} />

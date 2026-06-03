@@ -50,7 +50,7 @@ export default async function LangLayout({
     <ContentProvider lang={lang}>
       <LangSync lang={lang} />
       <Navbar lang={lang} />
-      <main>{children}</main>
+      <main className="w-full max-w-full overflow-x-clip">{children}</main>
       <Footer lang={lang} />
       <Chatbot lang={lang} />
     </ContentProvider>

@@ -1,22 +1,77 @@
 'use client'
 import { useEffect } from 'react'
 
-export function useScrollReveal() {
-  useEffect(() => {
-    const observer = new IntersectionObserver(
+const REVEAL_SEL = '.reveal, .reveal-left, .reveal-right'
+
+let observer: IntersectionObserver | null = null
+let scrollBound = false
+let subscribers = 0
+
+/** Show elements whose bounding box intersects the viewport (iOS Safari fallback). */
+function revealInViewport() {
+  document.querySelectorAll(`${REVEAL_SEL}:not(.visible)`).forEach(el => {
+    const rect = el.getBoundingClientRect()
+    const buffer = 60
+    if (rect.top < window.innerHeight + buffer && rect.bottom > -buffer) {
+      el.classList.add('visible')
+    }
+  })
+}
+
+function observeNewTargets() {
+  if (typeof window === 'undefined') return
+
+  const isMobile = window.matchMedia('(max-width: 768px)').matches
+
+  if (!observer) {
+    observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible')
-          }
+          if (entry.isIntersecting) entry.target.classList.add('visible')
         })
       },
-      { threshold: 0.1, rootMargin: '0px 0px -60px 0px' }
+      {
+        threshold: isMobile ? 0.01 : 0.08,
+        rootMargin: isMobile ? '0px' : '0px 0px -40px 0px',
+      },
     )
+  }
 
-    const targets = document.querySelectorAll('.reveal, .reveal-left, .reveal-right')
-    targets.forEach(el => observer.observe(el))
+  document.querySelectorAll(`${REVEAL_SEL}:not(.visible)`).forEach(el => observer!.observe(el))
 
-    return () => observer.disconnect()
+  if (!scrollBound) {
+    scrollBound = true
+    window.addEventListener('scroll', revealInViewport, { passive: true })
+    window.addEventListener('touchstart', revealInViewport, { passive: true })
+    window.addEventListener('resize', revealInViewport, { passive: true })
+  }
+
+  revealInViewport()
+  if (isMobile) {
+    window.setTimeout(revealInViewport, 400)
+    window.setTimeout(revealInViewport, 1500)
+  }
+}
+
+function teardown() {
+  observer?.disconnect()
+  observer = null
+  if (scrollBound) {
+    window.removeEventListener('scroll', revealInViewport)
+    window.removeEventListener('touchstart', revealInViewport)
+    window.removeEventListener('resize', revealInViewport)
+    scrollBound = false
+  }
+}
+
+export function useScrollReveal() {
+  useEffect(() => {
+    subscribers++
+    const raf = requestAnimationFrame(observeNewTargets)
+    return () => {
+      cancelAnimationFrame(raf)
+      subscribers--
+      if (subscribers <= 0) teardown()
+    }
   }, [])
 }

@@ -75,6 +75,8 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+  width: 100%;
 }
 
 body {
@@ -82,7 +84,10 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   line-height: 1.8;
-  overflow-x: hidden;
+  overflow-x: clip;
+  width: 100%;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ─── Typography ─── */
@@ -236,6 +241,20 @@ h1, h2, h3, h4, h5, h6 {
 }
 .reveal-right.visible { opacity: 1; transform: translateX(0); }
 
+/* Mobile: vertical-only reveals — avoids horizontal overflow & iOS observer bugs */
+@media (max-width: 768px) {
+  .reveal,
+  .reveal-left,
+  .reveal-right {
+    transform: translateY(20px);
+  }
+  .reveal.visible,
+  .reveal-left.visible,
+  .reveal-right.visible {
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; transition: none; }
 }
@@ -264,6 +283,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-wrap: nowrap;
   will-change: transform;
   animation: marquee var(--marquee-duration, 40s) linear infinite;
+  contain: layout style;
 }
 .marquee-group {
   display: flex;
