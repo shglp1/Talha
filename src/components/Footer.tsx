@@ -108,11 +108,11 @@ export default function Footer({ lang }: { lang: Lang }) {
             </Link>
           </div>
 
-          {/* Hours — pinned left on desktop; inner dir=rtl for correct Arabic reading */}
-          <div className="flex flex-col items-end gap-1 lg:flex-1 lg:min-w-0 order-3">
+          {/* Hours — right-aligned on mobile (RTL); far left on desktop only */}
+          <div className="flex flex-col items-start lg:items-end gap-1.5 w-full lg:flex-1 lg:min-w-0 order-3 border-t border-obsidian-border/70 pt-3 lg:border-t-0 lg:pt-0">
             <div
               dir={lang === 'ar' ? 'rtl' : 'ltr'}
-              className={`flex flex-col gap-1 w-fit max-w-full ${
+              className={`flex flex-col gap-1 w-full lg:w-fit max-w-full ${
                 lang === 'ar' ? 'items-start' : 'items-end'
               }`}
             >
