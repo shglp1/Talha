@@ -1,22 +1,23 @@
 'use client'
-import Image from 'next/image'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
+import SitePhoto from '@/components/SitePhoto'
 import SectionExtras from '@/components/SectionExtras'
 
 export default function ClosingStatement({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, hidden } = useContent()
+  const { ov, hidden, photoUrl } = useContent()
 
   return (
     <section className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
       {/* Background — scales dramatic dark */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src={ov('photos', 'closing-bg', '/assets/scales-dramatic.jpg')}
+        <SitePhoto
+          src={photoUrl('closing-bg', '/assets/scales-dramatic.jpg')}
+          fallback="/assets/scales-dramatic.jpg"
           alt="scales of justice"
           fill
           quality={70}

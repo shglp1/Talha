@@ -17,6 +17,7 @@ type ContentValue = {
   loading: boolean
   refresh: () => void
   ov: (section: string, key: string, fallback: string) => string
+  photoUrl: (key: string, fallback: string) => string
   hidden: (section: string, key: string) => boolean
   list: (section: string, fallback: LocalItem[]) => LocalItem[]
   extras: (section: string) => ExtraField[]
@@ -82,6 +83,12 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
 
   const ov = useCallback(
     (section: string, key: string, fallback: string) => {
+      // Photo URLs must never be blanked by visibility flags or empty overrides.
+      if (section === 'photos') {
+        const row = scalars[`photos.${key}`]
+        const v = row?.value_ar || row?.value_en
+        return v && v.trim() ? v.trim() : fallback
+      }
       if (hidden(section, key)) return ''
       const row = scalars[`${section}.${key}`]
       if (!row) return fallback
@@ -91,12 +98,13 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
     [scalars, lang, hidden],
   )
 
+  const photoUrl = useCallback(
+    (key: string, fallback: string) => ov('photos', key, fallback),
+    [ov],
+  )
+
   const list = useCallback(
     (section: string, fallback: LocalItem[]) => {
-      // While loading, return fallback so the page renders immediately with
-      // the right shape. Once loaded, prefer DB data; only keep fallback if
-      // the section is genuinely empty in the database.
-      if (loading) return fallback
       const rows = items[section]
       if (!rows || rows.length === 0) return fallback
       return rows.map(r => ({
@@ -106,7 +114,7 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
         icon: r.icon ?? null,
       }))
     },
-    [items, lang, loading],
+    [items, lang],
   )
 
   const extras = useCallback(
@@ -129,7 +137,7 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
   )
 
   return (
-    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, hidden, list, extras, partners }}>
+    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, hidden, list, extras, partners }}>
       {children}
     </ContentContext.Provider>
   )
@@ -143,6 +151,7 @@ export function useContent(): ContentValue {
       loading: false,
       refresh: () => {},
       ov: (_s, _k, fallback) => fallback,
+      photoUrl: (_k, fallback) => fallback,
       hidden: () => false,
       list: (_s, fallback) => fallback,
       extras: () => [],

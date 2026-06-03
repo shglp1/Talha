@@ -255,7 +255,7 @@ export default function AdminDashboard() {
       const data = await res.json()
       if (!res.ok) { setPhotoError(data.error || 'فشل الرفع'); return }
       setPhotoUrls(prev => ({ ...prev, [photoKey]: data.url }))
-      setPhotoSuccess('تم رفع الصورة بنجاح ✓')
+      setPhotoSuccess('تم رفع الصورة بنجاح — سيظهر التحديث على الموقع خلال ثوانٍ ✓')
       setTimeout(() => setPhotoSuccess(''), 3000)
     } catch { setPhotoError('تعذّر الاتصال بالخادم') }
     finally { setPhotoUploading(null) }
@@ -310,13 +310,20 @@ export default function AdminDashboard() {
         section: item.section, key: item.key,
         value_ar: item.value_ar, value_en: item.value_en,
       }))
-      // Save visibility markers: key = fieldKey + '__vis', value '0' = hidden, '1' = visible
-      const visRows = content.map(item => ({
-        section: item.section, key: item.key + '__vis',
-        value_ar: item.hidden ? '0' : '1',
-        value_en: item.hidden ? '0' : '1',
-      }))
+      // Only persist visibility when a field is explicitly hidden
+      const visRows = content
+        .filter(item => item.hidden)
+        .map(item => ({
+          section: item.section, key: item.key + '__vis',
+          value_ar: '0', value_en: '0',
+        }))
       await adminApi.saveContent([...scalarRows, ...visRows])
+      const toClearVis = content.filter(
+        item => !item.hidden && dbKeys.has(`${item.section}.${item.key}__vis`),
+      )
+      await Promise.all(
+        toClearVis.map(item => adminApi.deleteContentField(item.section, `${item.key}__vis`)),
+      )
       setLastSavedAt(new Date().toLocaleTimeString('ar-SA'))
       setSaveStatus('saved')
       setDbKeys(new Set(content.map(c => `${c.section}.${c.key}`)))

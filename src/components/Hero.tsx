@@ -1,17 +1,17 @@
 'use client'
 import { useEffect, useRef } from 'react'
-import Image from 'next/image'
 import { ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
+import SitePhoto from '@/components/SitePhoto'
 
 export default function Hero({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   const Arrow = isAr ? ArrowLeft : ArrowRight
   const titleRef = useRef<HTMLDivElement>(null)
-  const { ov, hidden, list, loading } = useContent()
+  const { ov, hidden, list, photoUrl } = useContent()
 
   const stats = list('hero_stats', [
     { title: '15+', desc: tr.hero.stat1, icon: null },
@@ -42,8 +42,9 @@ export default function Hero({ lang }: { lang: Lang }) {
   return (
     <section id="home" className="relative min-h-screen flex flex-col justify-center overflow-hidden" dir={tr.dir}>
       <div className="absolute inset-0 z-0">
-        <Image
-          src={ov('photos', 'hero-banner', '/assets/hero-banner.jpg')}
+        <SitePhoto
+          src={photoUrl('hero-banner', '/assets/hero-banner.jpg')}
+          fallback="/assets/hero-banner.jpg"
           alt="مكتب د. طلحة غوث للمحاماة"
           fill
           priority
@@ -111,8 +112,6 @@ export default function Hero({ lang }: { lang: Lang }) {
           style={{
             transitionDelay: '0.8s',
             gridTemplateColumns: `repeat(${Math.min(stats.length, 4)}, minmax(0, 1fr))`,
-            transition: 'opacity 0.3s ease',
-            opacity: loading ? 0 : 1,
           }}
         >
           {stats.map((s, i) => (

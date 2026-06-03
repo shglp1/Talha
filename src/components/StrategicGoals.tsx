@@ -1,17 +1,17 @@
 'use client'
-import Image from 'next/image'
 import { Trophy } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
+import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
 import SectionExtras from '@/components/SectionExtras'
 
 export default function StrategicGoals({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, list } = useContent()
+  const { ov, list, photoUrl } = useContent()
 
   const items = list(
     'goals',
@@ -22,8 +22,9 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
     <section className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
       {/* Subtle background — earth from space, very faint */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src={ov('photos', 'goals-bg', '/assets/global-reach.jpg')}
+        <SitePhoto
+          src={photoUrl('goals-bg', '/assets/global-reach.jpg')}
+          fallback="/assets/global-reach.jpg"
           alt=""
           fill
           quality={70}

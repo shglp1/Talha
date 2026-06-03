@@ -1,10 +1,10 @@
 'use client'
-import Image from 'next/image'
 import { ShieldCheck } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
+import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
 
 const DEFAULT_PILLARS = {
@@ -26,7 +26,7 @@ export default function About({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   useScrollReveal()
-  const { ov, list, hidden } = useContent()
+  const { ov, list, hidden, photoUrl } = useContent()
 
   const pillars = list(
     'about_pillars',
@@ -47,8 +47,9 @@ export default function About({ lang }: { lang: Lang }) {
           <div className={`reveal ${isAr ? 'reveal-right order-first lg:order-first' : 'reveal-left'}`}>
             <div className="relative mx-auto max-w-[420px] lg:max-w-none">
               <div className="relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[3/4] shadow-2xl">
-                <Image
-                  src={ov('photos', 'about-lawyer', '/assets/team-lawyer.jpg')}
+                <SitePhoto
+                  src={photoUrl('about-lawyer', '/assets/team-lawyer.jpg')}
+                  fallback="/assets/team-lawyer.jpg"
                   alt={isAr ? 'مبنى مكتب القانوني' : 'Law Office Building'}
                   fill
                   quality={90}

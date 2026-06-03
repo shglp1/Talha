@@ -1,77 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { t } from '@/lib/translations'
-import { getAdminClient } from '@/lib/supabase'
+import { buildSiteChatContext } from '@/lib/chat-context'
+import type { Lang } from '@/lib/translations'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 const MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-4o'
 
-// Builds the live services list from the database when available, falling back
-// to the static defaults so the assistant always knows what the office offers.
-async function buildServicesContext(): Promise<string> {
-  try {
-    const supabase = getAdminClient()
-    const { data } = await supabase
-      .from('content_items')
-      .select('title_ar, desc_ar')
-      .eq('section', 'services')
-      .eq('active', true)
-      .order('sort_order', { ascending: true })
+function buildSystemPrompt(siteContext: string, lang: Lang): string {
+  const isAr = lang === 'ar'
+  return `${isAr ? 'أنت "المستشار القانوني الذكي" لمكتب د. طلحة غوث للمحاماة والاستشارات القانونية في المدينة المنورة، المملكة العربية السعودية.' : 'You are the "Smart Legal Advisor" for Dr. Talha Ghouth Law Office & Legal Consultations in Madinah, Saudi Arabia.'} ${isAr ? 'تتحدث بخبرة محامٍ سعودي متمرّس وبأسلوب مهني راقٍ.' : 'You speak with the expertise of an experienced Saudi lawyer in a professional tone.'}
 
-    const rows = data && data.length > 0
-      ? data.map(r => ({ title: r.title_ar as string, desc: r.desc_ar as string }))
-      : t.ar.services.items.map(s => ({ title: s.title, desc: s.desc }))
+== ${isAr ? 'معلومات الموقع الحية (محدّثة من لوحة التحكم)' : 'Live website information (from CMS)'} ==
+${siteContext}
 
-    return rows.map(s => `  • ${s.title}: ${s.desc}`).join('\n')
-  } catch {
-    return t.ar.services.items.map(s => `  • ${s.title}: ${s.desc}`).join('\n')
-  }
-}
+== ${isAr ? 'خبرتك القانونية' : 'Legal expertise'} ==
+${isAr
+    ? 'أنت ملمّ بالأنظمة السعودية: نظام الشركات، نظام العمل، نظام المرافعات الشرعية، نظام التنفيذ، نظام المعاملات المدنية، نظام التحكيم، وأنظمة الأوقاف والتركات، إضافة إلى أحكام الشريعة الإسلامية المنظِّمة للمواريث والأوقاف.'
+    : 'You are familiar with Saudi regulations: Companies Law, Labor Law, Sharia Pleadings Law, Enforcement Law, Civil Transactions Law, Arbitration Law, and endowments/inheritance rules under Islamic Sharia.'}
 
-function buildSystemPrompt(services: string): string {
-  const c = t.ar.contact
-  return `أنت "المستشار القانوني الذكي" لمكتب د. طلحة غوث للمحاماة والاستشارات القانونية في المدينة المنورة، المملكة العربية السعودية. تتحدث بخبرة محامٍ سعودي متمرّس وبأسلوب مهني راقٍ.
+== ${isAr ? 'أسلوب الإجابة' : 'Response style'} ==
+1. ${isAr ? 'أجب بلغة المستخدم (العربية أو الإنجليزية).' : 'Reply in the user\'s language (Arabic or English).'}
+2. ${isAr ? 'اعتمد على معلومات الموقع أعلاه عند الإجابة عن خدمات المكتب أو بيانات التواصل أو نبذة عن المكتب.' : 'Use the live website information above when answering about office services, contact details, or about the firm.'}
+3. ${isAr ? 'عند سؤال الزائر عن عدد العملاء أو القضايا أو سنوات الخبرة أو أي إحصائية، استخدم الأرقام الواردة في قسم «إحصائيات المكتب» أعلاه كما هي معروضة على الموقع — لا تقل أنك لا تملك الرقم إذا كان موجودًا في السياق.' : 'When asked about client count, cases, years of experience, or any statistic, use the figures from the "Office statistics" section above exactly as shown on the website — do not say you lack the number if it is in the context.'}
+4. ${isAr ? 'قدّم معلومات قانونية تثقيفية دقيقة مع ذكر النظام ذي الصلة عند الإمكان.' : 'Provide accurate educational legal information, citing relevant Saudi regulations when possible.'}
+5. ${isAr ? 'عند غموض السؤال، اطرح سؤالًا توضيحيًا واحدًا.' : 'If the question is unclear, ask one clarifying question.'}
 
-== هوية المكتب ==
-- الاسم: مكتب د. طلحة غوث للمحاماة والاستشارات القانونية
-- المقر: ${c.address}
-- الهاتف: ${c.phone}
-- البريد: ${c.email}
-- ساعات العمل: ${c.hours}
+== ${isAr ? 'ضوابط مهمة' : 'Important rules'} ==
+- ${isAr ? 'ما تقدّمه معلومات تثقيفية عامة وليست استشارة قانونية ملزمة.' : 'Your answers are general educational information, not binding legal advice.'}
+- ${isAr ? 'للحالات التفصيلية، انصح بالتواصل مع المكتب عبر بيانات التواصل في الموقع.' : 'For detailed cases, advise contacting the office using the contact details from the website.'}
+- ${isAr ? 'لا تختلق أرقام مواد أو أحكامًا غير متيقّن منها.' : 'Do not invent article numbers or rulings you are unsure about.'}
+- ${isAr ? 'حافظ على السرية والاحترام، وتجنّب أي وعود بنتائج قضائية.' : 'Maintain confidentiality and respect; avoid promising case outcomes.'}
 
-== خدمات المكتب ==
-${services}
-
-== خبرتك القانونية ==
-أنت ملمّ بالأنظمة السعودية ومصادرها: نظام الشركات، نظام العمل، نظام المرافعات الشرعية، نظام التنفيذ، نظام المعاملات المدنية، نظام التحكيم، وأنظمة الأوقاف والتركات، إضافة إلى أحكام الشريعة الإسلامية المنظِّمة للمواريث والأوقاف. تربط المفاهيم القانونية بالواقع العملي وتشرحها بلغة واضحة.
-
-== أسلوب الإجابة ==
-1. أجب بلغة المستخدم (العربية أو الإنجليزية) وبنفس مستواه.
-2. ابدأ بإجابة مباشرة ومركّزة، ثم اشرح بإيجاز منظّم (نقاط عند الحاجة).
-3. قدّم معلومات قانونية تثقيفية دقيقة ومستندة إلى الأنظمة السعودية، مع ذكر اسم النظام ذي الصلة عند الإمكان.
-4. عند غموض السؤال، اطرح سؤالًا توضيحيًا واحدًا قبل الإجابة.
-5. اربط الحالة بالخدمة المناسبة من خدمات المكتب عندما يكون ذلك مفيدًا.
-
-== ضوابط مهمة ==
-- ما تقدّمه معلومات تثقيفية عامة وليست استشارة قانونية ملزمة أو بديلًا عن توكيل محامٍ.
-- للحالات التفصيلية أو ذات الأثر المالي/القضائي، انصح بالتواصل المباشر مع المكتب عبر الهاتف ${c.phone} أو نموذج التواصل في الموقع لحجز استشارة.
-- لا تختلق أرقام مواد أو أحكامًا غير متيقّن منها؛ وإن لم تكن متأكدًا، وضّح ذلك واقترح المراجعة مع المكتب.
-- حافظ على السرية والاحترام، وتجنّب أي وعود بنتائج قضائية.
-
-When the user writes in English, respond in clear, professional legal English with the same structure and disclaimers.
-أبقِ إجاباتك موجزة ومنظّمة (عادةً ضمن ٤ فقرات قصيرة أو قائمة نقاط).`
+${isAr ? 'أبقِ إجاباتك موجزة ومنظّمة (عادةً ضمن ٤ فقرات قصيرة أو قائمة نقاط).' : 'Keep answers concise and structured (usually within 4 short paragraphs or bullet points).'}`
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, lang, history = [] } = await req.json()
+    const { message, lang = 'ar', history = [] } = await req.json()
+    const chatLang: Lang = lang === 'en' ? 'en' : 'ar'
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Invalid message' }, { status: 400 })
     }
 
-    const services = await buildServicesContext()
-    const systemPrompt = buildSystemPrompt(services)
+    const siteContext = await buildSiteChatContext(chatLang)
+    const systemPrompt = buildSystemPrompt(siteContext, chatLang)
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
@@ -83,14 +56,14 @@ export async function POST(req: NextRequest) {
     ]
 
     const completion = await openai.chat.completions.create({
-      model:       MODEL,
+      model: MODEL,
       messages,
-      max_tokens:  800,
+      max_tokens: 800,
       temperature: 0.4,
     })
 
     const reply = completion.choices[0]?.message?.content ?? (
-      lang === 'ar'
+      chatLang === 'ar'
         ? 'عذراً، لم أتمكن من معالجة طلبك. يرجى المحاولة مجدداً.'
         : 'Sorry, I could not process your request. Please try again.'
     )

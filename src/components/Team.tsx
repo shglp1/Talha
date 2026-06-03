@@ -1,10 +1,10 @@
 'use client'
-import Image from 'next/image'
 import { Building2 } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
+import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
 import SectionExtras from '@/components/SectionExtras'
 
@@ -15,7 +15,7 @@ export default function Team({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   useScrollReveal()
-  const { ov, list, hidden } = useContent()
+  const { ov, list, hidden, photoUrl } = useContent()
 
   const specializations = list(
     'team_specializations',
@@ -63,8 +63,9 @@ export default function Team({ lang }: { lang: Lang }) {
             <div className="relative">
               {/* Team consultation image */}
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] shadow-xl">
-                <Image
-                  src={ov('photos', 'team-main', '/assets/consultation.jpg')}
+                <SitePhoto
+                  src={photoUrl('team-main', '/assets/consultation.jpg')}
+                  fallback="/assets/consultation.jpg"
                   alt={isAr ? 'مكتب د. طلحة غوث للمحاماة' : 'Dr. Talha Ghouth Law Office'}
                   fill
                   quality={95}
@@ -75,8 +76,9 @@ export default function Team({ lang }: { lang: Lang }) {
 
               {/* Floating digital-law image */}
               <div className={`absolute -bottom-8 ${isAr ? 'left-2 sm:-left-6' : 'right-2 sm:-right-6'} w-28 h-36 sm:w-36 sm:h-44 rounded-xl overflow-hidden border-4 border-white shadow-2xl`}>
-                <Image
-                  src={ov('photos', 'team-floating', '/assets/digital-law.jpg')}
+                <SitePhoto
+                  src={photoUrl('team-floating', '/assets/digital-law.jpg')}
+                  fallback="/assets/digital-law.jpg"
                   alt={isAr ? 'الخدمات الرقمية' : 'Digital services'}
                   fill
                   quality={80}

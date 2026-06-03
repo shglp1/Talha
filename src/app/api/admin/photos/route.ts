@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/admin-auth'
+import { revalidatePublicSite } from '@/lib/revalidate-site'
 
 const BUCKET   = 'site-photos'
 const SECTION  = 'photos'
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
 
   if (dbErr) return NextResponse.json({ error: `تم الرفع لكن فشل الحفظ: ${dbErr.message}` }, { status: 500 })
 
+  revalidatePublicSite()
   return NextResponse.json({ url })
 }
 
@@ -61,5 +63,6 @@ export async function DELETE(req: NextRequest) {
   const supabase = getAdminClient()
   await supabase.from('site_content').delete().eq('section', SECTION).eq('key', photoKey)
 
+  revalidatePublicSite()
   return NextResponse.json({ ok: true })
 }
