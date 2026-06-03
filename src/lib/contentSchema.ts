@@ -274,12 +274,12 @@ export function defaultListItems(section: string): DefaultListItem[] {
       return t.ar.goals.items.map((it, i) => ({
         title_ar: it.title, title_en: t.en.goals.items[i]?.title ?? '',
         desc_ar: it.desc, desc_en: t.en.goals.items[i]?.desc ?? '',
-        icon: null,
+        icon: ['Award', 'UserCheck', 'Lightbulb', 'TrendingUp', 'BookOpen', 'Brain', 'Gem'][i] ?? null,
       }))
     case 'team_specializations':
       return t.ar.team.specializations.map((label, i) => ({
         title_ar: label, title_en: t.en.team.specializations[i] ?? '',
-        desc_ar: '', desc_en: '', icon: null,
+        desc_ar: '', desc_en: '', icon: ['Building2', 'Landmark', 'Scroll', 'Users', 'Gavel', 'TrendingUp'][i] ?? null,
       }))
     case 'clients_sectors':
       return t.ar.clients.sectors.map((s, i) => ({

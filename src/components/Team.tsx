@@ -43,7 +43,7 @@ export default function Team({ lang }: { lang: Lang }) {
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {specializations.map((s, i) => {
-                const Icon = getIcon(s.icon) ?? Building2
+                const Icon = getIcon(s.icon) ?? getIcon(SPEC_ICON_NAMES[i]) ?? Building2
                 return (
                   <div key={s.id ?? `${s.title}-${i}`} className="group flex items-center gap-3 bg-white border border-obsidian-border rounded-xl px-4 py-3 transition-all hover:border-gold/40 hover:shadow-[0_8px_20px_rgba(26,22,15,0.06)]">
                     <span className="w-9 h-9 rounded-lg bg-gold-soft border border-gold/25 flex items-center justify-center flex-shrink-0 group-hover:bg-gold transition-colors">

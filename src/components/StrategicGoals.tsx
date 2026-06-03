@@ -7,15 +7,23 @@ import { useContent } from '@/components/ContentProvider'
 import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
 import SectionExtras from '@/components/SectionExtras'
+import { defaultListItems } from '@/lib/contentSchema'
+
+const GOAL_ICONS = ['Award', 'UserCheck', 'Lightbulb', 'TrendingUp', 'BookOpen', 'Brain', 'Gem']
 
 export default function StrategicGoals({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
   const { ov, list, photoUrl } = useContent()
 
+  const iconFallback = defaultListItems('goals')
   const items = list(
     'goals',
-    tr.goals.items.map(g => ({ title: g.title, desc: g.desc, icon: null })),
+    tr.goals.items.map((g, i) => ({
+      title: g.title,
+      desc: g.desc,
+      icon: iconFallback[i]?.icon ?? GOAL_ICONS[i] ?? null,
+    })),
   )
 
   return (
@@ -44,7 +52,7 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
         {/* Goals grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {items.map((goal, i) => {
-            const Icon = getIcon(goal.icon) ?? Trophy
+            const Icon = getIcon(goal.icon) ?? getIcon(GOAL_ICONS[i]) ?? Trophy
             return (
               <article
                 key={goal.id ?? goal.title}

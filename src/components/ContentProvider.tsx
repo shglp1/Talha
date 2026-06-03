@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { SiteContent, ContentItem, Partner } from '@/lib/supabase'
+import { defaultListItems } from '@/lib/contentSchema'
 import type { Lang } from '@/lib/translations'
 
 /**
@@ -107,11 +108,12 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
     (section: string, fallback: LocalItem[]) => {
       const rows = items[section]
       if (!rows || rows.length === 0) return fallback
-      return rows.map(r => ({
+      const defaults = defaultListItems(section)
+      return rows.map((r, i) => ({
         id: r.id,
         title: lang === 'ar' ? r.title_ar : r.title_en,
         desc: lang === 'ar' ? r.desc_ar : r.desc_en,
-        icon: r.icon ?? null,
+        icon: r.icon ?? defaults[i]?.icon ?? fallback[i]?.icon ?? null,
       }))
     },
     [items, lang],
