@@ -12,6 +12,11 @@ const config: Config = {
           pale:    '#EDD99A',
           soft:    '#F6EFDE',
         },
+        rock: {
+          DEFAULT: '#646A6D',
+          muted:   'rgba(100, 106, 109, 0.75)',
+          dark:    '#4F5558',
+        },
         /* Light-theme surfaces (names kept for compatibility) */
         obsidian: {
           DEFAULT: '#FFFFFF',

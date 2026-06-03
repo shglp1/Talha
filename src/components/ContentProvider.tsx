@@ -19,6 +19,8 @@ type ContentValue = {
   refresh: () => void
   ov: (section: string, key: string, fallback: string) => string
   photoUrl: (key: string, fallback: string) => string
+  heroCarousel: (fallback?: string) => string[]
+  enabled: (section: string, key: string, defaultOn?: boolean) => boolean
   hidden: (section: string, key: string) => boolean
   list: (section: string, fallback: LocalItem[]) => LocalItem[]
   extras: (section: string) => ExtraField[]
@@ -104,6 +106,43 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
     [ov],
   )
 
+  const heroCarousel = useCallback(
+    (fallback = '/assets/hero-banner.jpg') => {
+      const defaultUrl = scalars['photos.hero-banner']?.value_ar?.trim() || fallback
+      let extras: string[] = []
+      const row = scalars['photos.hero-carousel']
+      if (row?.value_ar) {
+        try {
+          const parsed = JSON.parse(row.value_ar) as unknown
+          if (Array.isArray(parsed)) {
+            extras = parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+          }
+        } catch { /* invalid JSON */ }
+      }
+      const seen = new Set<string>()
+      const merged: string[] = []
+      for (const url of [defaultUrl, ...extras]) {
+        if (url && !seen.has(url)) {
+          seen.add(url)
+          merged.push(url)
+        }
+      }
+      return merged
+    },
+    [scalars],
+  )
+
+  const enabled = useCallback(
+    (section: string, key: string, defaultOn = true) => {
+      const row = scalars[`${section}.${key}`]
+      const v = (row?.value_ar ?? row?.value_en ?? '').trim().toLowerCase()
+      if (v === '0' || v === 'false' || v === 'off') return false
+      if (v === '1' || v === 'true' || v === 'on') return true
+      return defaultOn
+    },
+    [scalars],
+  )
+
   const list = useCallback(
     (section: string, fallback: LocalItem[]) => {
       const rows = items[section]
@@ -139,7 +178,7 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
   )
 
   return (
-    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, hidden, list, extras, partners }}>
+    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, heroCarousel, enabled, hidden, list, extras, partners }}>
       {children}
     </ContentContext.Provider>
   )
@@ -154,6 +193,8 @@ export function useContent(): ContentValue {
       refresh: () => {},
       ov: (_s, _k, fallback) => fallback,
       photoUrl: (_k, fallback) => fallback,
+      heroCarousel: (fallback = '/assets/hero-banner.jpg') => [fallback],
+      enabled: (_s, _k, defaultOn = true) => defaultOn,
       hidden: () => false,
       list: (_s, fallback) => fallback,
       extras: () => [],

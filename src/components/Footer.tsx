@@ -1,6 +1,6 @@
 'use client'
-import Image from 'next/image'
 import { Phone, Mail, MapPin, Clock } from 'lucide-react'
+import BrandLogo from '@/components/BrandLogo'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
@@ -47,40 +47,33 @@ export default function Footer({ lang }: { lang: Lang }) {
   ].filter(l => !hidden('nav', l.key))
 
   return (
-    <footer className="bg-obsidian-surface border-t border-obsidian-border" dir={tr.dir}>
+    <footer className="footer-gold" dir={tr.dir}>
       {/* Main footer */}
       <div className="section-container py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="mb-5">
-              <Image
-                src="/logo.png"
-                alt="د. طلحة غوث للمحاماة | Dr. Talha Ghouth Law Firm"
-                width={400}
-                height={88}
-                unoptimized
-                className="h-12 sm:h-14 w-auto max-w-[280px] object-contain"
-              />
+              <BrandLogo className="h-14 sm:h-16 w-auto max-w-[300px] sm:max-w-[340px] object-contain object-right" />
             </div>
-            <p className="text-cream-muted text-sm leading-relaxed mb-6 max-w-xs">{ov('footer', 'tagline', tr.footer.tagline)}</p>
+            <p className="footer-muted text-sm leading-relaxed mb-6 max-w-xs">{ov('footer', 'tagline', tr.footer.tagline)}</p>
             {/* Contact quick info */}
             <div className="space-y-3">
-              <a href={`tel:${phone.replace(/\s/g, '')}`} className="flex items-center gap-3 text-sm text-cream-muted hover:text-gold transition-colors group">
-                <span className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center group-hover:bg-gold/20 transition-colors flex-shrink-0">
-                  <Phone size={14} className="text-gold" />
+              <a href={`tel:${phone.replace(/\s/g, '')}`} className="footer-link flex items-center gap-3 text-sm transition-colors group">
+                <span className="footer-icon-ring w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-white/35 transition-colors flex-shrink-0">
+                  <Phone size={14} />
                 </span>
                 <span dir="ltr">{phone}</span>
               </a>
-              <a href={`mailto:${email}`} className="flex items-center gap-3 text-sm text-cream-muted hover:text-gold transition-colors group">
-                <span className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center group-hover:bg-gold/20 transition-colors flex-shrink-0">
-                  <Mail size={14} className="text-gold" />
+              <a href={`mailto:${email}`} className="footer-link flex items-center gap-3 text-sm transition-colors group">
+                <span className="footer-icon-ring w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-white/35 transition-colors flex-shrink-0">
+                  <Mail size={14} />
                 </span>
                 <span>{email}</span>
               </a>
-              <div className="flex items-start gap-3 text-sm text-cream-muted">
-                <span className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
-                  <MapPin size={14} className="text-gold" />
+              <div className="footer-muted flex items-start gap-3 text-sm">
+                <span className="footer-icon-ring w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin size={14} />
                 </span>
                 <span className="mt-1.5">{address}</span>
               </div>
@@ -99,14 +92,14 @@ export default function Footer({ lang }: { lang: Lang }) {
               <a
                 href={`tel:${phone.replace(/\s/g, '')}`}
                 aria-label={lang === 'ar' ? 'اتصل بنا' : 'Call us'}
-                className="w-10 h-10 rounded-full bg-gold/10 border border-gold/30 text-gold flex items-center justify-center hover:bg-gold hover:text-white hover:border-gold transition-all"
+                className="footer-social-btn w-10 h-10 rounded-full flex items-center justify-center transition-all"
               >
                 <Phone size={16} />
               </a>
               <a
                 href={`mailto:${email}`}
                 aria-label={lang === 'ar' ? 'راسلنا' : 'Email us'}
-                className="w-10 h-10 rounded-full bg-gold/10 border border-gold/30 text-gold flex items-center justify-center hover:bg-gold hover:text-white hover:border-gold transition-all"
+                className="footer-social-btn w-10 h-10 rounded-full flex items-center justify-center transition-all"
               >
                 <Mail size={16} />
               </a>
@@ -115,12 +108,12 @@ export default function Footer({ lang }: { lang: Lang }) {
 
           {/* Quick links */}
           <div>
-            <h4 className="text-cream font-semibold mb-5 text-base">{ov('footer', 'quickLinks', tr.footer.quickLinks)}</h4>
+            <h4 className="footer-heading font-semibold mb-5 text-base">{ov('footer', 'quickLinks', tr.footer.quickLinks)}</h4>
             <ul className="space-y-3">
               {quickLinks.map(l => (
                 <li key={l.href + l.label}>
-                  <a href={l.href} className="text-sm text-cream-muted hover:text-gold transition-colors flex items-center gap-2 group">
-                    <span className="w-1 h-1 rounded-full bg-gold/40 group-hover:bg-gold transition-colors" />
+                  <a href={l.href} className="footer-link text-sm transition-colors flex items-center gap-2 group">
+                    <span className="footer-bullet w-1 h-1 rounded-full transition-colors" />
                     {l.label}
                   </a>
                 </li>
@@ -130,12 +123,12 @@ export default function Footer({ lang }: { lang: Lang }) {
 
           {/* Services */}
           <div>
-            <h4 className="text-cream font-semibold mb-5 text-base">{ov('footer', 'services', tr.footer.services)}</h4>
+            <h4 className="footer-heading font-semibold mb-5 text-base">{ov('footer', 'services', tr.footer.services)}</h4>
             <ul className="space-y-3">
               {services.map(s => (
                 <li key={s.label}>
-                  <a href={s.href} className="text-sm text-cream-muted hover:text-gold transition-colors flex items-center gap-2 group">
-                    <span className="w-1 h-1 rounded-full bg-gold/40 group-hover:bg-gold transition-colors" />
+                  <a href={s.href} className="footer-link text-sm transition-colors flex items-center gap-2 group">
+                    <span className="footer-bullet w-1 h-1 rounded-full transition-colors" />
                     {s.label}
                   </a>
                 </li>
@@ -145,15 +138,15 @@ export default function Footer({ lang }: { lang: Lang }) {
 
           {/* Hours */}
           <div>
-            <h4 className="text-cream font-semibold mb-5 text-base">
+            <h4 className="footer-heading font-semibold mb-5 text-base">
               {lang === 'ar' ? 'ساعات العمل' : 'Working Hours'}
             </h4>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <Clock size={16} className="text-gold mt-0.5 flex-shrink-0" />
+                <Clock size={16} className="text-[#646A6D] mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-cream-muted">{hours}</p>
-                  <p className="text-xs text-cream-muted/70 mt-1">
+                  <p className="text-sm footer-muted">{hours}</p>
+                  <p className="text-xs footer-muted opacity-80 mt-1">
                     {lang === 'ar' ? 'الجمعة والسبت: مغلق' : 'Fri & Sat: Closed'}
                   </p>
                 </div>
@@ -163,7 +156,7 @@ export default function Footer({ lang }: { lang: Lang }) {
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-gold hover:text-white border border-gold/20 rounded-lg px-4 py-2.5 hover:bg-gold transition-all mt-2"
+                className="footer-map-btn inline-flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 transition-all mt-2 border"
               >
                 <MapPin size={14} />
                 {lang === 'ar' ? 'عرض الموقع على الخريطة' : 'View on Google Maps'}
@@ -178,9 +171,9 @@ export default function Footer({ lang }: { lang: Lang }) {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-obsidian-border">
+      <div className="footer-divider border-t">
         <div className="section-container py-5 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <p className="text-xs text-cream-muted/70 text-center">
+          <p className="text-xs footer-muted opacity-80 text-center">
             © {year} {lang === 'ar' ? 'مكتب د. طلحة غوث للمحاماة والاستشارات القانونية.' : 'Dr. Talha Ghawth Law Office.'} {ov('footer', 'rights', tr.footer.rights)}.
           </p>
         </div>

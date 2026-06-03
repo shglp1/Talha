@@ -4,14 +4,14 @@ import { ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
-import SitePhoto from '@/components/SitePhoto'
+import HeroCarousel from '@/components/HeroCarousel'
 
 export default function Hero({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const isAr = lang === 'ar'
   const Arrow = isAr ? ArrowLeft : ArrowRight
   const titleRef = useRef<HTMLDivElement>(null)
-  const { ov, hidden, list, photoUrl } = useContent()
+  const { ov, hidden, list, heroCarousel } = useContent()
 
   const stats = list('hero_stats', [
     { title: '15+', desc: tr.hero.stat1, icon: null },
@@ -42,17 +42,12 @@ export default function Hero({ lang }: { lang: Lang }) {
   return (
     <section id="home" className="relative min-h-screen flex flex-col justify-center overflow-hidden" dir={tr.dir}>
       <div className="absolute inset-0 z-0">
-        <SitePhoto
-          src={photoUrl('hero-banner', '/assets/hero-banner.jpg')}
+        <HeroCarousel
+          slides={heroCarousel('/assets/hero-banner.jpg')}
           fallback="/assets/hero-banner.jpg"
           alt="مكتب د. طلحة غوث للمحاماة"
-          fill
-          priority
-          quality={95}
-          sizes="100vw"
-          className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/65" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/65 z-[2]" />
       </div>
 
       <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent z-10" />

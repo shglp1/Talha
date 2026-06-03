@@ -9,30 +9,36 @@ import SectionExtras from '@/components/SectionExtras'
 export default function ClosingStatement({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, hidden, photoUrl } = useContent()
+  const { ov, photoUrl, enabled } = useContent()
+
+  const showBg = enabled('closing', 'show_bg', true)
+  const showPortrait = enabled('closing', 'show_portrait', false)
+  const defaultBg = '/assets/scales-dramatic.jpg'
+  const bgUrl = photoUrl('closing-bg', defaultBg)
+  const portraitUrl = photoUrl('closing-portrait', '')
+  const isCustomBg = bgUrl.startsWith('http')
 
   return (
     <section className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
-      {/* Background — scales dramatic dark */}
-      <div className="absolute inset-0 z-0">
-        <SitePhoto
-          src={photoUrl('closing-bg', '/assets/scales-dramatic.jpg')}
-          fallback="/assets/scales-dramatic.jpg"
-          alt="scales of justice"
-          fill
-          quality={70}
-          className="object-cover object-center opacity-15"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-obsidian via-obsidian/95 to-obsidian" />
-      </div>
+      {showBg && (
+        <div className="absolute inset-0 z-0">
+          <SitePhoto
+            src={bgUrl}
+            fallback="/assets/scales-dramatic.jpg"
+            alt=""
+            fill
+            quality={90}
+            className={`object-cover object-center ${isCustomBg ? 'opacity-[0.55]' : 'opacity-25'}`}
+          />
+          <div className={`absolute inset-0 bg-gradient-to-b ${isCustomBg ? 'from-white/45 via-white/35 to-white/65' : 'from-white/70 via-white/55 to-white/85'}`} />
+        </div>
+      )}
 
-      {/* Gold accent lines */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent z-10" />
       <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent z-10" />
 
       <div className="relative z-10 section-container">
         <div className="max-w-3xl mx-auto text-center reveal">
-          {/* Decorative quote marks */}
           <div className="text-8xl font-black text-gold/20 leading-none mb-4 select-none" aria-hidden>
             {lang === 'ar' ? '،،' : '"'}
           </div>
@@ -41,22 +47,33 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
             {ov('closing', 'quote', tr.closing.quote)}
           </blockquote>
 
-          {/* Divider */}
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="h-px flex-1 max-w-20 bg-gold/30" />
             <div className="w-2 h-2 rounded-full bg-gold" />
             <div className="h-px flex-1 max-w-20 bg-gold/30" />
           </div>
 
-          {/* Author */}
-          <div>
-            <p className="text-gold font-bold text-lg">{ov('closing', 'author', tr.closing.author)}</p>
-            <p className="text-cream-muted text-sm mt-1">{ov('closing', 'role', tr.closing.role)}</p>
+          <div className="flex flex-col items-center gap-4">
+            {showPortrait && portraitUrl && (
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-gold/50 shadow-xl ring-4 ring-gold/15 bg-white">
+                <SitePhoto
+                  src={portraitUrl}
+                  fallback={portraitUrl}
+                  alt={ov('closing', 'author', tr.closing.author)}
+                  fill
+                  quality={95}
+                  className="object-cover object-top"
+                  sizes="112px"
+                />
+              </div>
+            )}
+            <div>
+              <p className="text-gold font-bold text-lg">{ov('closing', 'author', tr.closing.author)}</p>
+              <p className="text-cream-muted text-sm mt-1">{ov('closing', 'role', tr.closing.role)}</p>
+            </div>
           </div>
 
-          {/* CTA */}
           <SectionExtras section="closing" align="center" />
-
         </div>
       </div>
     </section>

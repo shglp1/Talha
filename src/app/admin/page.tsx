@@ -91,6 +91,7 @@ export default function AdminDashboard() {
   const [dbKeys, setDbKeys]       = useState<Set<string>>(new Set())
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
   const [photoUrls, setPhotoUrls]     = useState<Record<string, string>>({})
+  const [heroSlides, setHeroSlides]   = useState<string[]>([])
   const [photoUploading, setPhotoUploading] = useState<string | null>(null)
   const [photoError, setPhotoError]   = useState('')
   const [photoSuccess, setPhotoSuccess] = useState('')
@@ -122,8 +123,19 @@ export default function AdminDashboard() {
     setDbKeys(new Set(rows.filter(r => !r.is_custom).map(r => `${r.section}.${r.key}`)))
     // Load photo overrides
     const photos: Record<string, string> = {}
-    rows.filter(r => r.section === 'photos').forEach(r => { if (r.value_ar) photos[r.key] = r.value_ar })
+    let slides: string[] = []
+    rows.filter(r => r.section === 'photos').forEach(r => {
+      if (r.key === 'hero-carousel' && r.value_ar) {
+        try {
+          const parsed = JSON.parse(r.value_ar)
+          if (Array.isArray(parsed)) slides = parsed.filter((u: unknown) => typeof u === 'string' && u)
+        } catch { /* ignore */ }
+      } else if (r.value_ar && r.key !== 'hero-carousel') {
+        photos[r.key] = r.value_ar
+      }
+    })
     setPhotoUrls(photos)
+    setHeroSlides(slides)
     const custom: CustomField[] = rows
       .filter(r => r.is_custom)
       .map(r => ({
@@ -242,6 +254,65 @@ export default function AdminDashboard() {
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
+  const saveHeroCarousel = async (slides: string[]) => {
+    await adminApi.saveContent([{
+      section: 'photos', key: 'hero-carousel',
+      value_ar: JSON.stringify(slides),
+      value_en: JSON.stringify(slides),
+    }])
+    setHeroSlides(slides)
+  }
+
+  const addHeroSlide = async (file: File) => {
+    setPhotoUploading('hero-carousel')
+    setPhotoError('')
+    setPhotoSuccess('')
+    try {
+      const auth = await getAuthHeader()
+      const form = new FormData()
+      form.append('file', file)
+      form.append('key', `hero-slide-${Date.now()}`)
+      const res = await fetch('/api/admin/photos', { method: 'POST', headers: auth, body: form })
+      const data = await res.json()
+      if (!res.ok) { setPhotoError(data.error || 'فشل الرفع'); return }
+      const next = [...heroSlides, data.url as string]
+      await saveHeroCarousel(next)
+      setPhotoSuccess('تمت إضافة صورة للواجهة الرئيسية ✓')
+      setTimeout(() => setPhotoSuccess(''), 3000)
+    } catch { setPhotoError('تعذّر الاتصال بالخادم') }
+    finally { setPhotoUploading(null) }
+  }
+
+  const removeHeroSlide = async (index: number) => {
+    if (!window.confirm('حذف هذه الصورة من عرض الواجهة؟')) return
+    const next = heroSlides.filter((_, i) => i !== index)
+    try {
+      await saveHeroCarousel(next)
+      setPhotoSuccess('تم حذف الصورة ✓')
+      setTimeout(() => setPhotoSuccess(''), 3000)
+    } catch { setPhotoError('تعذّر حذف الصورة') }
+  }
+
+  const setClosingPhotoFlag = async (key: 'show_bg' | 'show_portrait', on: boolean) => {
+    const val = on ? '1' : '0'
+    setContent(prev => prev.map(c =>
+      c.section === 'closing' && c.key === key ? { ...c, value_ar: val, value_en: val } : c,
+    ))
+    try {
+      await adminApi.saveContent([{ section: 'closing', key, value_ar: val, value_en: val }])
+      setPhotoSuccess(on ? 'تم تفعيل العرض ✓' : 'تم إخفاء العنصر ✓')
+      setTimeout(() => setPhotoSuccess(''), 2500)
+    } catch (err) { handleApiError(err) }
+  }
+
+  const closingFlag = (key: 'show_bg' | 'show_portrait', defaultOn: boolean) => {
+    const row = content.find(c => c.section === 'closing' && c.key === key)
+    const v = (row?.value_ar ?? '').trim()
+    if (v === '0') return false
+    if (v === '1') return true
+    return defaultOn
+  }
+
   const uploadPhoto = async (photoKey: string, file: File) => {
     setPhotoUploading(photoKey)
     setPhotoError('')
@@ -255,6 +326,18 @@ export default function AdminDashboard() {
       const data = await res.json()
       if (!res.ok) { setPhotoError(data.error || 'فشل الرفع'); return }
       setPhotoUrls(prev => ({ ...prev, [photoKey]: data.url }))
+      if (photoKey === 'closing-bg') {
+        await adminApi.saveContent([{ section: 'closing', key: 'show_bg', value_ar: '1', value_en: '1' }])
+        setContent(prev => prev.map(c =>
+          c.section === 'closing' && c.key === 'show_bg' ? { ...c, value_ar: '1', value_en: '1' } : c,
+        ))
+      }
+      if (photoKey === 'closing-portrait') {
+        await adminApi.saveContent([{ section: 'closing', key: 'show_portrait', value_ar: '1', value_en: '1' }])
+        setContent(prev => prev.map(c =>
+          c.section === 'closing' && c.key === 'show_portrait' ? { ...c, value_ar: '1', value_en: '1' } : c,
+        ))
+      }
       setPhotoSuccess('تم رفع الصورة بنجاح — سيظهر التحديث على الموقع خلال ثوانٍ ✓')
       setTimeout(() => setPhotoSuccess(''), 3000)
     } catch { setPhotoError('تعذّر الاتصال بالخادم') }
@@ -1081,20 +1164,121 @@ export default function AdminDashboard() {
           {/* ─── Photos Tab ─── */}
           {tab === 'photos' && (() => {
             const PHOTOS = [
-              { key: 'hero-banner',   labelAr: 'صورة الخلفية الرئيسية',        section: 'الواجهة الرئيسية',     original: '/assets/hero-banner.jpg' },
               { key: 'about-lawyer',  labelAr: 'صورة قسم «من نحن»',            section: 'من نحن',               original: '/assets/team-lawyer.jpg' },
               { key: 'team-main',     labelAr: 'الصورة الرئيسية لقسم «فريقنا»', section: 'فريقنا',              original: '/assets/consultation.jpg' },
               { key: 'team-floating', labelAr: 'الصورة الصغيرة العائمة (فريق)', section: 'فريقنا',             original: '/assets/digital-law.jpg' },
-              { key: 'closing-bg',    labelAr: 'خلفية الاقتباس الختامي',        section: 'الاقتباس الختامي',    original: '/assets/scales-dramatic.jpg' },
               { key: 'goals-bg',      labelAr: 'خلفية الأهداف الاستراتيجية',    section: 'أهدافنا الاستراتيجية', original: '/assets/global-reach.jpg' },
+            ]
+            const CLOSING_PHOTOS = [
+              { key: 'closing-bg', labelAr: 'خلفية القسم (صورة كاملة خلف النص)', original: '/assets/scales-dramatic.jpg', toggleKey: 'show_bg' as const, toggleLabel: '✓ إظهار صورة الخلفية على الموقع', defaultOn: true },
+              { key: 'closing-portrait', labelAr: 'صورة دائرية بجانب اسم المؤسس', original: '', toggleKey: 'show_portrait' as const, toggleLabel: '✓ إظهار الصورة بجانب الاسم', defaultOn: false },
+            ]
+            const defaultHero = photoUrls['hero-banner'] || '/assets/hero-banner.jpg'
+            const heroPreview = [
+              defaultHero,
+              ...heroSlides.filter(s => s !== defaultHero),
             ]
             return (
               <div>
-                <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 20, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7, maxWidth: 900 }}>
-                  ارفع صورة جديدة لأي قسم — الصورة الأصلية محفوظة دائماً ويمكن استعادتها. الحد الأقصى لحجم الصورة 8 ميجابايت (JPG, PNG, WEBP).
+                <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 20, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7, maxWidth: 920 }}>
+                  ارفع صورًا جديدة لأي قسم — الصورة الافتراضية تبقى دائمًا مع الصور المضافة. الحد الأقصى 8 ميجابايت (JPG, PNG, WEBP).
                 </div>
                 {photoSuccess && <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 8, padding: '10px 16px', marginBottom: 14, color: '#166534', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}><CheckCircle2 size={16} />{photoSuccess}</div>}
                 {photoError  && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 16px', marginBottom: 14, color: '#DC2626', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}><AlertCircle size={16} />{photoError}</div>}
+
+                <div style={{ background: C.panel, border: `1px solid ${C.gold}`, borderRadius: 14, padding: 18, marginBottom: 20, maxWidth: 920 }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: C.text }}>صور الواجهة الرئيسية (عرض متعدد)</h3>
+                  <p style={{ margin: '0 0 14px', fontSize: 12.5, color: C.dim, lineHeight: 1.6 }}>
+                    الصورة الافتراضية (#1) تبقى دائمًا — أضف صورًا إضافية (#2، #3…) وتتبدّل تلقائيًا في أعلى الموقع.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                    {heroPreview.map((src, i) => (
+                      <div key={`${src}-${i}`} style={{ position: 'relative', width: 140, height: 88, borderRadius: 10, overflow: 'hidden', border: `1px solid ${i === 0 ? C.gold : C.border}` }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {i > 0 && (
+                          <button type="button" onClick={() => removeHeroSlide(i - 1)} title="حذف"
+                            style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: 6, padding: 4, cursor: 'pointer', color: '#fff' }}>
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                        {i === 0 && (
+                          <span style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 100 }}>افتراضية</span>
+                        )}
+                        <span style={{ position: 'absolute', bottom: 4, right: 4, background: C.gold, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 100 }}>{i + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.gold, color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: photoUploading === 'hero-carousel' ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                      <Plus size={14} />
+                      {photoUploading === 'hero-carousel' ? 'جاري الرفع…' : 'إضافة صورة للواجهة'}
+                      <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }} disabled={photoUploading === 'hero-carousel'}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) addHeroSlide(f); e.target.value = '' }} />
+                    </label>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.soft, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', color: C.muted }}>
+                      <Upload size={14} />
+                      استبدال الصورة الافتراضية
+                      <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto('hero-banner', f); e.target.value = '' }} />
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 20, maxWidth: 920 }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 800, color: C.text }}>الاقتباس الختامي — صورتان منفصلتان</h3>
+                  <p style={{ margin: '0 0 10px', fontSize: 12, color: C.dim, lineHeight: 1.6 }}>
+                    الخلفية والصورة بجانب الاسم مستقلتان: ارفع كل واحدة في مكانها، ثم فعّل مربع «إظهار» أسفلها.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
+                    {CLOSING_PHOTOS.map(ph => {
+                      const current = photoUrls[ph.key]
+                      const isCustom = !!current
+                      const isUploading = photoUploading === ph.key
+                      const displaySrc = current || ph.original
+                      const toggleOn = closingFlag(ph.toggleKey, ph.defaultOn)
+                      return (
+                        <div key={ph.key} style={{ background: C.panel, border: `1px solid ${toggleOn ? C.gold : C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                          <div style={{ position: 'relative', height: 160, background: '#1A1A1A', overflow: 'hidden' }}>
+                            {displaySrc ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={displaySrc} alt={ph.labelAr} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isUploading ? 0.4 : 1 }} />
+                            ) : (
+                              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.dim, fontSize: 13 }}>لم تُرفع صورة بعد</div>
+                            )}
+                            {isUploading && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Loader2 size={28} style={{ color: C.gold, animation: 'spin 1s linear infinite' }} />
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ padding: '14px 16px' }}>
+                            <p style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: '0 0 10px' }}>{ph.labelAr}</p>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer', fontSize: 13, color: C.muted }}>
+                              <input type="checkbox" checked={toggleOn} onChange={e => setClosingPhotoFlag(ph.toggleKey, e.target.checked)} />
+                              {ph.toggleLabel}
+                            </label>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.gold, color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isUploading ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                                <Upload size={14} />
+                                {isCustom ? 'تغيير الصورة' : 'رفع صورة'}
+                                <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }} disabled={isUploading}
+                                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(ph.key, f); e.target.value = '' }} />
+                              </label>
+                              {isCustom && (
+                                <button type="button" onClick={() => restorePhoto(ph.key)} disabled={isUploading}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.soft, border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 13, cursor: isUploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                  <RotateCcw size={13} /> حذف الصورة
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16, maxWidth: 900 }}>
                   {PHOTOS.map(ph => {
                     const current = photoUrls[ph.key]

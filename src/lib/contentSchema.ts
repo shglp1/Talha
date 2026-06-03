@@ -163,6 +163,8 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'closing', key: 'quote',  labelAr: 'الاقتباس', labelEn: 'Quote', multiline: true, def: { ar: t.ar.closing.quote, en: t.en.closing.quote } },
       { section: 'closing', key: 'author', labelAr: 'الاسم',    labelEn: 'Author', def: { ar: t.ar.closing.author, en: t.en.closing.author } },
       { section: 'closing', key: 'role',   labelAr: 'الصفة',    labelEn: 'Role',   def: { ar: t.ar.closing.role,   en: t.en.closing.role } },
+      { section: 'closing', key: 'show_bg', labelAr: 'إظهار صورة الخلفية', labelEn: 'Show background photo', def: { ar: '1', en: '1' } },
+      { section: 'closing', key: 'show_portrait', labelAr: 'إظهار الصورة بجانب الاسم', labelEn: 'Show portrait near name', def: { ar: '0', en: '0' } },
     ],
   },
   {
