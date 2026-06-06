@@ -60,6 +60,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
         <div className="flex items-center justify-between h-20 lg:h-[5.5rem]">
           <Link href={`/${lang}`} className="flex items-center gap-3 flex-shrink-0">
             <BrandLogo
+              variant="header"
               priority
               className="h-[3.25rem] sm:h-[3.75rem] lg:h-[5rem] w-auto max-w-[min(100%,320px)] sm:max-w-[380px] lg:max-w-[460px] object-contain object-right"
             />

@@ -1335,6 +1335,58 @@ export default function AdminDashboard() {
                 {photoError  && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 16px', marginBottom: 14, color: '#DC2626', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}><AlertCircle size={16} />{photoError}</div>}
 
                 <div style={{ background: C.panel, border: `1px solid ${C.gold}`, borderRadius: 14, padding: 18, marginBottom: 20, maxWidth: 920 }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: C.text }}>شعار الموقع (هيدر + تذييل)</h3>
+                  <p style={{ margin: '0 0 14px', fontSize: 12.5, color: C.dim, lineHeight: 1.6 }}>
+                    يمكنك رفع شعار مختلف لأعلى الصفحة (الهيدر) وأسفلها (التذييل). PNG بخلفية شفافة مُفضّل. بدون رفع مخصّص يُستخدم الشعار الافتراضي.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
+                    {([
+                      { key: 'logo-header', labelAr: 'شعار الهيدر (أعلى الموقع)', hint: 'شريط التنقل' },
+                      { key: 'logo-footer', labelAr: 'شعار التذييل (أسفل الموقع)', hint: 'قسم التذييل' },
+                    ] as const).map(logo => {
+                      const current = photoUrls[logo.key]
+                      const isCustom = !!current
+                      const isUploading = photoUploading === logo.key
+                      const displaySrc = current || '/logo.png'
+                      return (
+                        <div key={logo.key} style={{ background: C.soft, border: `1px solid ${isCustom ? C.gold : C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                          <div style={{ position: 'relative', height: 120, background: C.goldSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={displaySrc} alt={logo.labelAr} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: isUploading ? 0.4 : 1 }} />
+                            {isUploading && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.5)' }}>
+                                <Loader2 size={24} style={{ color: C.gold, animation: 'spin 1s linear infinite' }} />
+                              </div>
+                            )}
+                            {isCustom && (
+                              <span style={{ position: 'absolute', top: 8, right: 8, background: C.gold, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 100 }}>مُخصّص</span>
+                            )}
+                          </div>
+                          <div style={{ padding: '12px 14px' }}>
+                            <p style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: '0 0 2px' }}>{logo.labelAr}</p>
+                            <p style={{ fontSize: 11, color: C.dim, margin: '0 0 10px' }}>{logo.hint}</p>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.gold, color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isUploading ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                                <Upload size={14} />
+                                {isCustom ? 'تغيير الشعار' : 'رفع شعار'}
+                                <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }} disabled={isUploading}
+                                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(logo.key, f); e.target.value = '' }} />
+                              </label>
+                              {isCustom && (
+                                <button type="button" onClick={() => restorePhoto(logo.key)} disabled={isUploading}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 13, cursor: isUploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                  <RotateCcw size={13} /> استعادة الافتراضي
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ background: C.panel, border: `1px solid ${C.gold}`, borderRadius: 14, padding: 18, marginBottom: 20, maxWidth: 920 }}>
                   <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: C.text }}>صور الواجهة الرئيسية (عرض متعدد)</h3>
                   <p style={{ margin: '0 0 14px', fontSize: 12.5, color: C.dim, lineHeight: 1.6 }}>
                     الصورة الافتراضية (#1) تبقى دائمًا — أضف صورًا إضافية (#2، #3…) وتتبدّل تلقائيًا في أعلى الموقع.

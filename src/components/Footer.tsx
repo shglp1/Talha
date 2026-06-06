@@ -103,7 +103,7 @@ export default function Footer({ lang }: { lang: Lang }) {
             href={`/${lang}`}
             className="inline-flex justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 rounded-lg"
           >
-            <BrandLogo className="h-14 sm:h-16 w-auto max-w-[200px] sm:max-w-[220px] object-contain" />
+            <BrandLogo variant="footer" className="h-14 sm:h-16 w-auto max-w-[200px] sm:max-w-[220px] object-contain" />
           </Link>
           {tagline && (
             <p className="footer-tagline text-[11px] sm:text-xs leading-snug max-w-md mx-auto px-2 mt-0.5">
