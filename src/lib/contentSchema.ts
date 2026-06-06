@@ -221,7 +221,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'footer', key: 'phone',   labelAr: 'رقم الهاتف',        labelEn: 'Phone number',  def: { ar: t.ar.contact.phone,   en: t.en.contact.phone } },
       { section: 'footer', key: 'email',   labelAr: 'البريد الإلكتروني', labelEn: 'Email address', def: { ar: t.ar.contact.email,   en: t.en.contact.email } },
       { section: 'footer', key: 'address', labelAr: 'العنوان (نص اختياري)', labelEn: 'Address (optional text)', multiline: true, def: { ar: t.ar.contact.address, en: t.en.contact.address } },
-      { section: 'footer', key: 'mapButton', labelAr: 'زر خرائط جوجل — النص', labelEn: 'Google Maps button label', def: { ar: 'عرض الموقع على خرائط جوجل', en: 'Open in Google Maps' } },
+      { section: 'footer', key: 'mapButton', labelAr: 'أيقونة خرائط جوجل (للقارئ الآلي فقط)', labelEn: 'Google Maps icon (screen reader label)', def: { ar: 'عرض الموقع على خرائط جوجل', en: 'Open in Google Maps' } },
       { section: 'footer', key: 'mapLink', labelAr: 'زر خرائط جوجل — الرابط', labelEn: 'Google Maps link', def: { ar: DEFAULT_GOOGLE_MAPS_URL, en: DEFAULT_GOOGLE_MAPS_URL } },
       { section: 'footer', key: 'whatsapp', labelAr: 'رابط واتساب', labelEn: 'WhatsApp link', def: { ar: 'https://api.whatsapp.com/send/?phone=966148444555&text&type=phone_number&app_absent=0', en: 'https://api.whatsapp.com/send/?phone=966148444555&text&type=phone_number&app_absent=0' } },
       { section: 'footer', key: 'tagline', labelAr: 'الجملة في التذييل (وسط التذييل)', labelEn: 'Footer tagline (centered)', multiline: true, def: { ar: t.ar.footer.tagline, en: t.en.footer.tagline } },

@@ -102,11 +102,15 @@ export default function Footer({ lang }: { lang: Lang }) {
     ? ''
     : ov('footer', 'mapLink', DEFAULT_GOOGLE_MAPS_URL).trim()
   const mapLink = normalizeUrl(mapLinkRaw) ?? DEFAULT_GOOGLE_MAPS_URL
+  const showMapIcon = !hidden('footer', 'mapButton') && !hidden('footer', 'mapLink') && !!mapLinkRaw
+  const mapAriaLabel =
+    mapButtonLabel ||
+    (lang === 'ar' ? 'عرض الموقع على خرائط جوجل' : 'Open in Google Maps')
 
   const hasFooterBadges = FOOTER_BADGE_PHOTO_KEYS.some(key => !!photoUrl(key, ''))
 
-  const hasContactLines = !!(phone || email || address || mapButtonLabel)
-  const hasSocial = !!(whatsapp || phone || email)
+  const hasContactLines = !!(phone || email || address)
+  const hasSocial = !!(whatsapp || phone || email || showMapIcon)
   const hasContactSection = hasContactLines || hasSocial
   const hasExtras = extras('footer').length > 0
   const hasCopyright = !!(officeName || rights)
@@ -168,20 +172,21 @@ export default function Footer({ lang }: { lang: Lang }) {
                   <span {...cmsField('footer', 'address')}>{address}</span>
                 </FooterRow>
               )}
-              {mapButtonLabel && (
-                <a
-                  href={mapLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="footer-map-btn inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors"
-                  {...cmsField('footer', 'mapButton')}
-                >
-                  <MapPin size={13} className="text-gold shrink-0" aria-hidden />
-                  {mapButtonLabel}
-                </a>
-              )}
               {hasSocial && (
                 <div className="flex items-center justify-center gap-1.5 sm:ms-1">
+                  {showMapIcon && (
+                    <a
+                      href={mapLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={mapAriaLabel}
+                      title={mapAriaLabel}
+                      className="footer-social-btn w-7 h-7 rounded-full flex items-center justify-center transition-all"
+                      {...cmsField('footer', 'mapButton')}
+                    >
+                      <MapPin size={12} className="text-gold" aria-hidden />
+                    </a>
+                  )}
                   {whatsapp && (
                     <a
                       href={whatsapp}
