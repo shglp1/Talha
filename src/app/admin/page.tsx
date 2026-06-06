@@ -25,6 +25,7 @@ import NavLinkPicker from '@/components/admin/NavLinkPicker'
 import {
   STYLE_KEY_SUFFIX, ITEM_STYLE_SECTION, parseFieldStyle, serializeFieldStyle, isEmptyStyle, buildAdminDbKeys,
 } from '@/lib/text-style'
+import { FOOTER_BADGE_PHOTO_KEYS } from '@/lib/site-links'
 import type { FieldTextStyle } from '@/lib/text-style'
 
 type Tab = 'messages' | 'content' | 'lists' | 'layout' | 'partners' | 'photos'
@@ -64,7 +65,7 @@ const GROUP_HELP: Record<string, string> = {
   partners: 'عناوين قسم «شركاء النجاح». الشركاء (شعار/حذف/إضافة) في تبويب «شركاء النجاح».',
   closing: 'الاقتباس الختامي قبل قسم التواصل.',
   contact: 'حقول ونصوص نموذج التواصل.',
-  footer: 'رقم الهاتف، البريد، العنوان، واتساب، والجملة الوسطى وحقوق النشر. كل حقل مستقل — «مخفي» يخفيه من التذييل فقط. اضغط «حفظ كل التعديلات» بعد التعديل.',
+  footer: 'رقم الهاتف، البريد، زر خرائط جوجل، واتساب، والجملة وحقوق النشر. الشعارات الإضافية (حتى 5) من تبويب «صور الموقع».',
   chat: 'يظهر في نافذة المساعد الذكي.',
 }
 
@@ -1511,6 +1512,54 @@ export default function AdminDashboard() {
                                 <button type="button" onClick={() => restorePhoto(logo.key)} disabled={isUploading}
                                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 13, cursor: isUploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
                                   <RotateCcw size={13} /> استعادة الافتراضي
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ background: C.panel, border: `1px solid ${C.gold}`, borderRadius: 14, padding: 18, marginBottom: 20, maxWidth: 920 }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: C.text }}>شعارات إضافية في التذييل (حتى 5)</h3>
+                  <p style={{ margin: '0 0 14px', fontSize: 12.5, color: C.dim, lineHeight: 1.6 }}>
+                    ارفع شعارات الشريك أو رؤية 2030 وغيرها — تظهر في صف واحد أسفل شعار المكتب. PNG بخلفية شفافة مُفضّل. اترك الحقل فارغًا لإخفاء أي شعار.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: 12 }}>
+                    {FOOTER_BADGE_PHOTO_KEYS.map((key, i) => {
+                      const current = photoUrls[key]
+                      const isCustom = !!current
+                      const isUploading = photoUploading === key
+                      return (
+                        <div key={key} style={{ background: C.soft, border: `1px solid ${isCustom ? C.gold : C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                          <div style={{ position: 'relative', height: 88, background: C.goldSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                            {current ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={current} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: isUploading ? 0.4 : 1 }} />
+                            ) : (
+                              <span style={{ fontSize: 11, color: C.dim, textAlign: 'center', padding: '0 6px' }}>لم يُرفع بعد</span>
+                            )}
+                            {isUploading && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.5)' }}>
+                                <Loader2 size={22} style={{ color: C.gold, animation: 'spin 1s linear infinite' }} />
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ padding: '10px 12px' }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: '0 0 8px' }}>شعار {i + 1}</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 10px', background: C.gold, color: '#fff', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: isUploading ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                                <Upload size={13} />
+                                {isCustom ? 'تغيير' : 'رفع'}
+                                <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }} disabled={isUploading}
+                                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(key, f); e.target.value = '' }} />
+                              </label>
+                              {isCustom && (
+                                <button type="button" onClick={() => restorePhoto(key)} disabled={isUploading}
+                                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '6px 10px', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 11, cursor: isUploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                  <RotateCcw size={12} /> إزالة
                                 </button>
                               )}
                             </div>

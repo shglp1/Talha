@@ -8,6 +8,8 @@ import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
 import SectionExtras from '@/components/SectionExtras'
 import { cmsField } from '@/lib/cms-attrs'
+import { FOOTER_BADGE_PHOTO_KEYS, DEFAULT_GOOGLE_MAPS_URL } from '@/lib/site-links'
+import { normalizeUrl } from '@/lib/url'
 
 const DEFAULT_WHATSAPP_URL =
   'https://api.whatsapp.com/send/?phone=966148444555&text&type=phone_number&app_absent=0'
@@ -65,7 +67,7 @@ function resolveFooterText(
 export default function Footer({ lang }: { lang: Lang }) {
   const tr = t[lang]
   const year = new Date().getFullYear()
-  const { ov, hidden, extras } = useContent()
+  const { ov, hidden, extras, photoUrl } = useContent()
 
   const phone = resolveFooterText(ov, hidden, 'phone', tr.contact.phone)
   const email = resolveFooterText(ov, hidden, 'email', tr.contact.email)
@@ -89,7 +91,21 @@ export default function Footer({ lang }: { lang: Lang }) {
     ? ''
     : ov('footer', 'rights', tr.footer.rights).trim()
 
-  const hasContactLines = !!(phone || email || address)
+  const mapButtonLabel = hidden('footer', 'mapButton')
+    ? ''
+    : ov(
+        'footer',
+        'mapButton',
+        lang === 'ar' ? 'عرض الموقع على خرائط جوجل' : 'Open in Google Maps',
+      ).trim()
+  const mapLinkRaw = hidden('footer', 'mapLink')
+    ? ''
+    : ov('footer', 'mapLink', DEFAULT_GOOGLE_MAPS_URL).trim()
+  const mapLink = normalizeUrl(mapLinkRaw) ?? DEFAULT_GOOGLE_MAPS_URL
+
+  const hasFooterBadges = FOOTER_BADGE_PHOTO_KEYS.some(key => !!photoUrl(key, ''))
+
+  const hasContactLines = !!(phone || email || address || mapButtonLabel)
   const hasSocial = !!(whatsapp || phone || email)
   const hasContactSection = hasContactLines || hasSocial
   const hasExtras = extras('footer').length > 0
@@ -99,13 +115,34 @@ export default function Footer({ lang }: { lang: Lang }) {
     <footer className="footer-gold footer-compact" dir={tr.dir}>
       <div className="section-container py-4 sm:py-5">
         {/* Logo + tagline — compact center block */}
-        <div className="flex flex-col items-center text-center gap-1">
+        <div className="flex flex-col items-center text-center gap-2">
           <Link
             href={`/${lang}`}
             className="inline-flex justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 rounded-lg"
           >
             <BrandLogo variant="footer" className="h-14 sm:h-16 w-auto max-w-[200px] sm:max-w-[220px] object-contain" />
           </Link>
+
+          {hasFooterBadges && (
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 max-w-2xl px-2">
+              {FOOTER_BADGE_PHOTO_KEYS.map((key, i) => {
+                const src = photoUrl(key, '')
+                if (!src) return null
+                return (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={key}
+                    src={src}
+                    alt={lang === 'ar' ? `شعار ${i + 1}` : `Logo ${i + 1}`}
+                    className="h-9 sm:h-11 w-auto max-w-[72px] sm:max-w-[88px] object-contain opacity-90"
+                    loading="lazy"
+                    draggable={false}
+                  />
+                )
+              })}
+            </div>
+          )}
+
           {tagline && (
             <p className="footer-tagline text-[11px] sm:text-xs leading-snug max-w-md mx-auto px-2 mt-0.5" {...cmsField('footer', 'tagline')}>
               {tagline}
@@ -130,6 +167,18 @@ export default function Footer({ lang }: { lang: Lang }) {
                 <FooterRow icon={MapPin}>
                   <span {...cmsField('footer', 'address')}>{address}</span>
                 </FooterRow>
+              )}
+              {mapButtonLabel && (
+                <a
+                  href={mapLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="footer-map-btn inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors"
+                  {...cmsField('footer', 'mapButton')}
+                >
+                  <MapPin size={13} className="text-gold shrink-0" aria-hidden />
+                  {mapButtonLabel}
+                </a>
               )}
               {hasSocial && (
                 <div className="flex items-center justify-center gap-1.5 sm:ms-1">
