@@ -28,7 +28,7 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
   )
 
   return (
-    <section className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
+    <section id="goals" className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
       {/* Subtle background — earth from space, very faint */}
       <div className="absolute inset-0 z-0">
         <SitePhoto

@@ -20,7 +20,7 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
   const isCustomBg = bgUrl.startsWith('http')
 
   return (
-    <section className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
+    <section id="closing" className="section-padding relative overflow-hidden bg-obsidian" dir={tr.dir}>
       {showBg && (
         <div className="absolute inset-0 z-0">
           <SitePhoto

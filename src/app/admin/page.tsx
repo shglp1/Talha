@@ -17,9 +17,11 @@ import {
   FIELD_GROUPS, ALL_FIELDS, LIST_SECTIONS, listSectionsForGroup,
   groupContentItems, groupContentItemsWithDefaults, emptyListSections, newListItemTemplate,
   HOMEPAGE_SECTIONS, serializeHomepageLayout, parseHomepageLayout, defaultHomepageLayout,
+  linkFieldKey,
 } from '@/lib/contentSchema'
 import type { ListSection } from '@/lib/contentSchema'
 import FieldStyleControls from '@/components/admin/FieldStyleControls'
+import NavLinkPicker from '@/components/admin/NavLinkPicker'
 import {
   STYLE_KEY_SUFFIX, ITEM_STYLE_SECTION, parseFieldStyle, serializeFieldStyle, isEmptyStyle, buildAdminDbKeys,
 } from '@/lib/text-style'
@@ -50,7 +52,7 @@ const DEFAULT_CONTENT_ROWS: ContentRow[] = ALL_FIELDS.map(f => ({
 }))
 
 const GROUP_HELP: Record<string, string> = {
-  nav: 'يظهر في شريط التنقل أعلى الموقع.',
+  nav: 'يظهر في شريط التنقل أعلى الموقع. اختر القسم بالنقر — بدون كتابة روابط تقنية.',
   hero: 'نصوص البانر + إحصائيات الأرقام (15+، 500+…) — أضف إحصائية من الأسفل.',
   about: 'نصوص «من نحن» + بطاقة سنوات الخبرة + ركائز (ثقة، احترافية…).',
   services: 'عناوين قسم «خدماتنا». البطاقات تُدار من هنا مباشرةً بالأسفل.',
@@ -431,6 +433,12 @@ export default function AdminDashboard() {
     ))
   }
 
+  const handleLinkChange = (section: string, key: string, val: string) => {
+    setContent(prev => prev.map(c =>
+      c.section === section && c.key === key ? { ...c, value_ar: val, value_en: val } : c
+    ))
+  }
+
   const clearField = (section: string, key: string) => {
     if (!window.confirm('هل أنت متأكد من مسح هذا الحقل؟')) return
     setContent(prev => prev.map(c =>
@@ -441,9 +449,15 @@ export default function AdminDashboard() {
   const restoreDefaultField = (section: string, key: string) => {
     const def = ALL_FIELDS.find(f => f.section === section && f.key === key)
     if (!def) return
-    setContent(prev => prev.map(c =>
-      c.section === section && c.key === key ? { ...c, value_ar: def.def.ar, value_en: def.def.en } : c,
-    ))
+    setContent(prev => prev.map(c => {
+      if (c.section === section && c.key === key) {
+        return { ...c, value_ar: def.def.ar, value_en: def.def.en }
+      }
+      if (def.linkDef && c.section === section && c.key === linkFieldKey(key)) {
+        return { ...c, value_ar: def.linkDef.ar, value_en: def.linkDef.en }
+      }
+      return c
+    }))
   }
 
   const patchFieldStyle = (section: string, key: string, patch: Partial<FieldTextStyle>) => {
@@ -1244,6 +1258,13 @@ export default function AdminDashboard() {
                                     )}
                                   </div>
                                 </div>
+                                {field.linkDef && !isHidden && (
+                                  <NavLinkPicker
+                                    value={content.find(c => c.section === field.section && c.key === linkFieldKey(field.key))?.value_ar ?? ''}
+                                    defaultAnchor={field.linkDef.ar}
+                                    onChange={href => handleLinkChange(field.section, linkFieldKey(field.key), href)}
+                                  />
+                                )}
                                 {!isHidden && (
                                   <FieldStyleControls
                                     style={item?.style}

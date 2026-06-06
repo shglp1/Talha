@@ -7,6 +7,8 @@ import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
 import { cmsField } from '@/lib/cms-attrs'
+import { navHrefDefault } from '@/lib/contentSchema'
+import { resolveNavHref } from '@/lib/url'
 
 const SCROLL_THRESHOLD = 48
 
@@ -31,14 +33,23 @@ export default function Navbar({ lang }: { lang: Lang }) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  const navHref = (key: string) => {
+    const def = navHrefDefault(key, lang)
+    return resolveNavHref(ov('nav', `${key}_href`, def), def)
+  }
+
   const links = [
-    { href: '#about',    key: 'about',    label: ov('nav', 'about',    tr.nav.about) },
-    { href: '#services', key: 'services', label: ov('nav', 'services', tr.nav.services) },
-    { href: '#vision',   key: 'vision',   label: ov('nav', 'vision',   tr.nav.vision) },
-    { href: '#whyus',    key: 'whyUs',    label: ov('nav', 'whyUs',    tr.nav.whyUs) },
-    { href: '#team',     key: 'team',     label: ov('nav', 'team',     tr.nav.team) },
-    { href: '#clients',  key: 'clients',  label: ov('nav', 'clients',  tr.nav.clients) },
-  ].filter(l => !hidden('nav', l.key))
+    { key: 'about',    label: ov('nav', 'about',    tr.nav.about) },
+    { key: 'services', label: ov('nav', 'services', tr.nav.services) },
+    { key: 'vision',   label: ov('nav', 'vision',   tr.nav.vision) },
+    { key: 'whyUs',    label: ov('nav', 'whyUs',    tr.nav.whyUs) },
+    { key: 'team',     label: ov('nav', 'team',     tr.nav.team) },
+    { key: 'clients',  label: ov('nav', 'clients',  tr.nav.clients) },
+  ]
+    .map(l => ({ ...l, href: navHref(l.key) }))
+    .filter(l => !hidden('nav', l.key))
+
+  const contactHref = navHref('contact')
 
   const linkClass = onHero && !menuOpen
     ? 'px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg text-white/95 hover:text-gold-pale hover:bg-white/10'
@@ -70,7 +81,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
           <nav className="hidden lg:flex items-center gap-1">
             {links.map(l => (
               <a
-                key={l.href}
+                key={l.key}
                 href={l.href}
                 className={linkClass}
                 onClick={() => setMenuOpen(false)}
@@ -85,9 +96,11 @@ export default function Navbar({ lang }: { lang: Lang }) {
             <Link href={`/${otherLang}`} className={langClass}>
               {tr.nav.en}
             </Link>
-            <a href="#contact" className="btn-gold text-sm py-2.5 px-6" style={{ color: '#1A160F' }} {...cmsField('nav', 'contact')}>
+            {!hidden('nav', 'contact') && (
+            <a href={contactHref} className="btn-gold text-sm py-2.5 px-6" style={{ color: '#1A160F' }} {...cmsField('nav', 'contact')}>
               {ov('nav', 'contact', tr.nav.contact)}
             </a>
+            )}
           </div>
 
           <button
@@ -105,7 +118,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
           <nav className="section-container py-4 flex flex-col gap-1">
             {links.map(l => (
               <a
-                key={l.href}
+                key={l.key}
                 href={l.href}
                 className="px-4 py-3 text-base font-medium rounded-lg transition-colors duration-200 text-cream-muted hover:text-gold hover:bg-gold/10"
                 onClick={() => setMenuOpen(false)}
@@ -122,8 +135,9 @@ export default function Navbar({ lang }: { lang: Lang }) {
               >
                 {tr.nav.en}
               </Link>
+              {!hidden('nav', 'contact') && (
               <a
-                href="#contact"
+                href={contactHref}
                 className="flex-1 btn-gold text-sm py-2.5 justify-center"
                 style={{ color: '#1A160F' }}
                 onClick={() => setMenuOpen(false)}
@@ -131,6 +145,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
               >
                 {ov('nav', 'contact', tr.nav.contact)}
               </a>
+              )}
             </div>
           </nav>
         </div>

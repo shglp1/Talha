@@ -18,6 +18,38 @@ export type ScalarField = {
   labelEn: string
   multiline?: boolean
   def: { ar: string; en: string }
+  /** When set, admin shows a destination URL stored as `{key}_href`. */
+  linkDef?: { ar: string; en: string }
+  /** Auto-generated companion row for linkDef — not shown as its own card in admin. */
+  isLinkField?: boolean
+}
+
+export function linkFieldKey(baseKey: string): string {
+  return `${baseKey}_href`
+}
+
+function expandFieldsWithLinks(fields: ScalarField[]): ScalarField[] {
+  const out: ScalarField[] = []
+  for (const f of fields) {
+    out.push(f)
+    if (f.linkDef) {
+      out.push({
+        section: f.section,
+        key: linkFieldKey(f.key),
+        labelAr: `${f.labelAr} — الرابط`,
+        labelEn: `${f.labelEn} — Link`,
+        def: f.linkDef,
+        isLinkField: true,
+      })
+    }
+  }
+  return out
+}
+
+/** Default nav anchor / URL for a menu item key (about, services, …). */
+export function navHrefDefault(navKey: string, lang: Lang = 'ar'): string {
+  const parent = FIELD_GROUPS.find(g => g.id === 'nav')?.fields.find(f => f.key === navKey)
+  return parent?.linkDef?.[lang] ?? parent?.linkDef?.ar ?? `#${navKey.toLowerCase()}`
 }
 
 export type FieldGroup = {
@@ -35,13 +67,13 @@ export const FIELD_GROUPS: FieldGroup[] = [
     titleAr: 'القائمة العلوية',
     titleEn: 'Navigation Menu',
     fields: [
-      { section: 'nav', key: 'about',    labelAr: 'من نحن',     labelEn: 'About',    def: { ar: t.ar.nav.about,    en: t.en.nav.about } },
-      { section: 'nav', key: 'services', labelAr: 'خدماتنا',    labelEn: 'Services', def: { ar: t.ar.nav.services, en: t.en.nav.services } },
-      { section: 'nav', key: 'vision',   labelAr: 'رؤيتنا',     labelEn: 'Vision',   def: { ar: t.ar.nav.vision,   en: t.en.nav.vision } },
-      { section: 'nav', key: 'whyUs',    labelAr: 'لماذا نحن',  labelEn: 'Why Us',   def: { ar: t.ar.nav.whyUs,    en: t.en.nav.whyUs } },
-      { section: 'nav', key: 'team',     labelAr: 'فريقنا',     labelEn: 'Team',     def: { ar: t.ar.nav.team,     en: t.en.nav.team } },
-      { section: 'nav', key: 'clients',  labelAr: 'عملاؤنا',    labelEn: 'Clients',  def: { ar: t.ar.nav.clients,  en: t.en.nav.clients } },
-      { section: 'nav', key: 'contact',  labelAr: 'تواصل معنا', labelEn: 'Contact',  def: { ar: t.ar.nav.contact,  en: t.en.nav.contact } },
+      { section: 'nav', key: 'about',    labelAr: 'من نحن',     labelEn: 'About',    def: { ar: t.ar.nav.about,    en: t.en.nav.about },    linkDef: { ar: '#about',    en: '#about' } },
+      { section: 'nav', key: 'services', labelAr: 'خدماتنا',    labelEn: 'Services', def: { ar: t.ar.nav.services, en: t.en.nav.services }, linkDef: { ar: '#services', en: '#services' } },
+      { section: 'nav', key: 'vision',   labelAr: 'رؤيتنا',     labelEn: 'Vision',   def: { ar: t.ar.nav.vision,   en: t.en.nav.vision },   linkDef: { ar: '#vision',   en: '#vision' } },
+      { section: 'nav', key: 'whyUs',    labelAr: 'لماذا نحن',  labelEn: 'Why Us',   def: { ar: t.ar.nav.whyUs,    en: t.en.nav.whyUs },    linkDef: { ar: '#whyus',    en: '#whyus' } },
+      { section: 'nav', key: 'team',     labelAr: 'فريقنا',     labelEn: 'Team',     def: { ar: t.ar.nav.team,     en: t.en.nav.team },     linkDef: { ar: '#team',     en: '#team' } },
+      { section: 'nav', key: 'clients',  labelAr: 'عملاؤنا',    labelEn: 'Clients',  def: { ar: t.ar.nav.clients,  en: t.en.nav.clients },  linkDef: { ar: '#clients',  en: '#clients' } },
+      { section: 'nav', key: 'contact',  labelAr: 'تواصل معنا', labelEn: 'Contact',  def: { ar: t.ar.nav.contact,  en: t.en.nav.contact },  linkDef: { ar: '#contact',  en: '#contact' } },
     ],
   },
   {
@@ -208,7 +240,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
 ]
 
 // Flat list for quick iteration / saving.
-export const ALL_FIELDS: ScalarField[] = FIELD_GROUPS.flatMap(g => g.fields)
+export const ALL_FIELDS: ScalarField[] = FIELD_GROUPS.flatMap(g => expandFieldsWithLinks(g.fields))
 
 export function defaultFor(section: string, key: string, lang: Lang): string {
   const f = ALL_FIELDS.find(x => x.section === section && x.key === key)
