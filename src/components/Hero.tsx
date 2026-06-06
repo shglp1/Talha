@@ -102,8 +102,9 @@ export default function Hero({ lang }: { lang: Lang }) {
           </div>
         )}
 
+        {stats.length > 0 && (
         <div
-          className={`reveal visible w-full max-w-3xl grid gap-4 border border-gold/20 rounded-2xl bg-black/40 backdrop-blur-md shadow-lg p-6`}
+          className="reveal visible w-full max-w-3xl grid gap-4 border border-gold/20 rounded-2xl bg-black/40 backdrop-blur-md shadow-lg p-6"
           style={{
             transitionDelay: '0.8s',
             gridTemplateColumns: `repeat(${Math.min(stats.length, 4)}, minmax(0, 1fr))`,
@@ -119,6 +120,7 @@ export default function Hero({ lang }: { lang: Lang }) {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       <a

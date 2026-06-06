@@ -81,6 +81,7 @@ export default function About({ lang }: { lang: Lang }) {
               {!hidden('about', 'body3') && <p>{ov('about', 'body3', tr.about.body3)}</p>}
             </div>
 
+            {pillars.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {pillars.map((p, i) => {
                 const Icon = getIcon(p.icon) ?? ShieldCheck
@@ -94,6 +95,7 @@ export default function About({ lang }: { lang: Lang }) {
                 )
               })}
             </div>
+            )}
 
           </div>
         </div>

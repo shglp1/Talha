@@ -34,12 +34,16 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
         </div>
       )}
 
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent z-10" />
-      <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent z-10" />
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent z-10 opacity-70" />
+      <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent z-10 opacity-70" />
 
       <div className="relative z-10 section-container">
         <div className="max-w-3xl mx-auto text-center reveal">
-          <div className="text-8xl font-black text-gold/20 leading-none mb-4 select-none" aria-hidden>
+          <div
+            className="closing-quote-mark text-6xl sm:text-7xl font-black font-display text-chatbot-gold leading-none mb-4 select-none"
+            style={{ lineHeight: 1.15, paddingBottom: '0.06em' }}
+            aria-hidden
+          >
             {lang === 'ar' ? '،،' : '"'}
           </div>
 
@@ -48,14 +52,14 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
           </blockquote>
 
           <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="h-px flex-1 max-w-20 bg-gold/30" />
-            <div className="w-2 h-2 rounded-full bg-gold" />
-            <div className="h-px flex-1 max-w-20 bg-gold/30" />
+            <div className="h-px flex-1 max-w-20 bg-gold-gradient opacity-70" />
+            <div className="w-2 h-2 rounded-full bg-gold-gradient shadow-[0_0_8px_rgba(196,151,58,0.45)]" />
+            <div className="h-px flex-1 max-w-20 bg-gold-gradient opacity-70" />
           </div>
 
           <div className="flex flex-col items-center gap-4">
             {showPortrait && portraitUrl && (
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-gold/50 shadow-xl ring-4 ring-gold/15 bg-white">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-gold/60 shadow-xl ring-4 ring-gold/20 bg-white">
                 <SitePhoto
                   src={portraitUrl}
                   fallback={portraitUrl}
@@ -68,8 +72,13 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
               </div>
             )}
             <div>
-              <p className="text-gold font-bold text-lg">{ov('closing', 'author', tr.closing.author)}</p>
-              <p className="text-cream-muted text-sm mt-1">{ov('closing', 'role', tr.closing.role)}</p>
+              <p
+                className="font-display text-chatbot-gold font-bold text-xl sm:text-2xl tracking-wide"
+                style={{ lineHeight: 1.45, paddingBottom: '0.12em' }}
+              >
+                {ov('closing', 'author', tr.closing.author)}
+              </p>
+              <p className="text-cream-muted text-sm mt-1.5">{ov('closing', 'role', tr.closing.role)}</p>
             </div>
           </div>
 

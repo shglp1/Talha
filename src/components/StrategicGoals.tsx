@@ -50,6 +50,7 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
         </div>
 
         {/* Goals grid */}
+        {items.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {items.map((goal, i) => {
             const Icon = getIcon(goal.icon) ?? getIcon(GOAL_ICONS[i]) ?? Trophy
@@ -73,6 +74,7 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
             )
           })}
         </div>
+        )}
 
         <SectionExtras section="goals" />
       </div>

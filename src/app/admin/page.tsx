@@ -6,7 +6,7 @@ import {
   MessageSquare, Settings, LogOut, Handshake, Plus, Trash2, Save,
   CheckCircle2, AlertCircle, RefreshCw, Mail, Phone, Globe, Pen,
   Upload, Loader2, LayoutList, ChevronDown, ArrowUp, ArrowDown, Search, Sparkles, X,
-  Eye, EyeOff, ImageIcon, RotateCcw,
+  Eye, EyeOff, ImageIcon, RotateCcw, LayoutGrid,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { ContactMessage, SiteContent, Partner, ContentItem } from '@/lib/supabase'
@@ -16,10 +16,11 @@ import { getIcon } from '@/lib/iconMap'
 import {
   FIELD_GROUPS, ALL_FIELDS, LIST_SECTIONS, listSectionsForGroup,
   groupContentItems, groupContentItemsWithDefaults, emptyListSections, newListItemTemplate,
+  HOMEPAGE_SECTIONS, serializeHomepageLayout, parseHomepageLayout, defaultHomepageLayout,
 } from '@/lib/contentSchema'
 import type { ListSection } from '@/lib/contentSchema'
 
-type Tab = 'messages' | 'content' | 'lists' | 'partners' | 'photos'
+type Tab = 'messages' | 'content' | 'lists' | 'layout' | 'partners' | 'photos'
 
 const C = {
   bg: '#F8F5EF', panel: '#FFFFFF', soft: '#FBF9F4', border: '#ECE6DA',
@@ -46,7 +47,6 @@ const DEFAULT_CONTENT_ROWS: ContentRow[] = ALL_FIELDS.map(f => ({
 const GROUP_HELP: Record<string, string> = {
   nav: 'يظهر في شريط التنقل أعلى الموقع.',
   hero: 'نصوص البانر + إحصائيات الأرقام (15+، 500+…) — أضف إحصائية من الأسفل.',
-  contactInfo: 'يظهر في قسم التواصل والتذييل.',
   about: 'نصوص «من نحن» + بطاقة سنوات الخبرة + ركائز (ثقة، احترافية…).',
   services: 'عناوين قسم «خدماتنا». البطاقات تُدار من هنا مباشرةً بالأسفل.',
   visionMission: 'يظهر في قسم «الرؤية والرسالة».',
@@ -57,7 +57,7 @@ const GROUP_HELP: Record<string, string> = {
   partners: 'عناوين قسم «شركاء النجاح». الشركاء (شعار/حذف/إضافة) في تبويب «شركاء النجاح».',
   closing: 'الاقتباس الختامي قبل قسم التواصل.',
   contact: 'حقول ونصوص نموذج التواصل.',
-  footer: 'الجملة الوسطى في التذييل وحقوق النشر فقط (بدون روابط سريعة).',
+  footer: 'رقم الهاتف، البريد، العنوان، واتساب، والجملة الوسطى وحقوق النشر. كل حقل مستقل — «مخفي» يخفيه من التذييل فقط. اضغط «حفظ كل التعديلات» بعد التعديل.',
   chat: 'يظهر في نافذة المساعد الذكي.',
 }
 
@@ -95,6 +95,8 @@ export default function AdminDashboard() {
   const [photoUploading, setPhotoUploading] = useState<string | null>(null)
   const [photoError, setPhotoError]   = useState('')
   const [photoSuccess, setPhotoSuccess] = useState('')
+  const [homepageLayout, setHomepageLayout] = useState(defaultHomepageLayout())
+  const [layoutStatus, setLayoutStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   // Centralized handling of API failures: 401/403 means the session is bad.
   const handleApiError = useCallback((err: unknown) => {
@@ -146,6 +148,8 @@ export default function AdminDashboard() {
       }))
       .sort((a, b) => a.display_order - b.display_order)
     setCustomFields(custom)
+    const layoutRow = map.get('layout.homepage_sections')
+    setHomepageLayout(parseHomepageLayout(layoutRow?.value_ar || layoutRow?.value_en || ''))
   }, [])
 
   const loadAll = useCallback(async () => {
@@ -174,25 +178,10 @@ export default function AdminDashboard() {
     }
 
     if (itsR.status === 'fulfilled') {
-      let grouped = groupContentItems((itsR.value.data ?? []) as ContentItem[])
-      const empty = emptyListSections(grouped)
-      setPreviewSections(new Set(empty))
-
-      if (empty.length > 0) {
-        try {
-          const seedRes = await adminApi.seedDefaults()
-          if (seedRes.inserted > 0) {
-            const reload = await adminApi.getItems()
-            grouped = groupContentItems((reload.data ?? []) as ContentItem[])
-            setPreviewSections(new Set(emptyListSections(grouped)))
-          } else {
-            grouped = groupContentItemsWithDefaults((itsR.value.data ?? []) as ContentItem[])
-          }
-        } catch {
-          grouped = groupContentItemsWithDefaults((itsR.value.data ?? []) as ContentItem[])
-        }
-      }
-      setItems(grouped)
+      const dbRows = (itsR.value.data ?? []) as ContentItem[]
+      const grouped = groupContentItems(dbRows)
+      setPreviewSections(new Set(emptyListSections(grouped)))
+      setItems(groupContentItemsWithDefaults(dbRows))
     } else {
       errors.push(itsR.reason instanceof AdminApiError ? itsR.reason.message : 'البطاقات')
       setItems(groupContentItemsWithDefaults([]))
@@ -313,6 +302,58 @@ export default function AdminDashboard() {
     return defaultOn
   }
 
+  const clientsBgFlag = () => {
+    const row = content.find(c => c.section === 'clients' && c.key === 'show_bg')
+    const v = (row?.value_ar ?? '').trim()
+    if (v === '0') return false
+    if (v === '1') return true
+    return true
+  }
+
+  const setClientsPhotoFlag = async (on: boolean) => {
+    const val = on ? '1' : '0'
+    setContent(prev => prev.map(c =>
+      c.section === 'clients' && c.key === 'show_bg' ? { ...c, value_ar: val, value_en: val } : c,
+    ))
+    try {
+      await adminApi.saveContent([{ section: 'clients', key: 'show_bg', value_ar: val, value_en: val }])
+      setPhotoSuccess(on ? 'تم تفعيل خلفية عملاؤنا ✓' : 'تم إخفاء خلفية عملاؤنا ✓')
+      setTimeout(() => setPhotoSuccess(''), 2500)
+    } catch (err) { handleApiError(err) }
+  }
+
+  const patchLayoutEntry = (id: string, patch: Partial<{ order: number; visible: boolean }>) => {
+    setHomepageLayout(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s))
+  }
+
+  const moveLayoutEntry = (index: number, dir: -1 | 1) => {
+    setHomepageLayout(prev => {
+      const sorted = [...prev].sort((a, b) => a.order - b.order)
+      const target = index + dir
+      if (target < 0 || target >= sorted.length) return prev
+      const next = [...sorted]
+      const a = next[index]
+      const b = next[target]
+      next[index] = { ...b, order: a.order }
+      next[target] = { ...a, order: b.order }
+      return next.sort((x, y) => x.order - y.order)
+    })
+  }
+
+  const saveHomepageLayout = async () => {
+    setLayoutStatus('saving')
+    try {
+      const sorted = [...homepageLayout].sort((a, b) => a.order - b.order)
+      const json = serializeHomepageLayout(sorted)
+      await adminApi.saveContent([{ section: 'layout', key: 'homepage_sections', value_ar: json, value_en: json }])
+      setLayoutStatus('saved')
+      setTimeout(() => setLayoutStatus('idle'), 2500)
+    } catch (err) {
+      handleApiError(err)
+      setLayoutStatus('error')
+    }
+  }
+
   const uploadPhoto = async (photoKey: string, file: File) => {
     setPhotoUploading(photoKey)
     setPhotoError('')
@@ -336,6 +377,12 @@ export default function AdminDashboard() {
         await adminApi.saveContent([{ section: 'closing', key: 'show_portrait', value_ar: '1', value_en: '1' }])
         setContent(prev => prev.map(c =>
           c.section === 'closing' && c.key === 'show_portrait' ? { ...c, value_ar: '1', value_en: '1' } : c,
+        ))
+      }
+      if (photoKey === 'clients-bg') {
+        await adminApi.saveContent([{ section: 'clients', key: 'show_bg', value_ar: '1', value_en: '1' }])
+        setContent(prev => prev.map(c =>
+          c.section === 'clients' && c.key === 'show_bg' ? { ...c, value_ar: '1', value_en: '1' } : c,
         ))
       }
       setPhotoSuccess('تم رفع الصورة بنجاح — سيظهر التحديث على الموقع خلال ثوانٍ ✓')
@@ -418,19 +465,32 @@ export default function AdminDashboard() {
   }
 
   // ─── Repeating list items (content_items) CRUD ───
-  const persistPreviewSection = async (section: string) => {
-    const res = await adminApi.seedDefaults(section)
-    if (res.inserted > 0) {
-      const reload = await adminApi.getItems()
-      const grouped = groupContentItems((reload.data ?? []) as ContentItem[])
-      setItems(grouped)
-      setPreviewSections(prev => {
-        const next = new Set(prev)
-        next.delete(section)
-        return next
-      })
-    }
-    return res.inserted
+  const reloadItemsFromDb = useCallback(async () => {
+    const reload = await adminApi.getItems()
+    const dbRows = (reload.data ?? []) as ContentItem[]
+    const grouped = groupContentItems(dbRows)
+    setItems(groupContentItemsWithDefaults(dbRows))
+    setPreviewSections(new Set(emptyListSections(grouped)))
+    return dbRows
+  }, [])
+
+  const syncSectionFromAdminState = async (section: string, sectionRows: ContentItem[]) => {
+    const payload = sectionRows.map((it, i) => ({
+      title_ar: it.title_ar ?? '',
+      title_en: it.title_en ?? '',
+      desc_ar: it.desc_ar ?? '',
+      desc_en: it.desc_en ?? '',
+      icon: it.icon ?? null,
+      active: it.active ?? true,
+      sort_order: i,
+    }))
+    await adminApi.syncSectionItems(section, payload)
+    await reloadItemsFromDb()
+    setPreviewSections(prev => {
+      const next = new Set(prev)
+      next.delete(section)
+      return next
+    })
   }
 
   const addItem = async (section: string) => {
@@ -438,11 +498,9 @@ export default function AdminDashboard() {
     setApiError('')
     try {
       if (previewSections.has(section)) {
-        const inserted = await persistPreviewSection(section)
-        if (inserted > 0) {
-          setListStatus('idle')
-          return
-        }
+        await syncSectionFromAdminState(section, items[section] ?? [])
+        setListStatus('idle')
+        return
       }
 
       const sectionRows = items[section] ?? []
@@ -481,8 +539,11 @@ export default function AdminDashboard() {
     setApiError('')
     try {
       if (!item.id) {
+        const sectionRows = (items[item.section] ?? []).map((it, i) =>
+          (it.id ?? `__row_${i}`) === rowKey ? item : it,
+        )
         if (previewSections.has(item.section)) {
-          await persistPreviewSection(item.section)
+          await syncSectionFromAdminState(item.section, sectionRows)
         } else {
           const { data } = await adminApi.addItem({
             section: item.section,
@@ -522,16 +583,46 @@ export default function AdminDashboard() {
     }
   }
 
+  const toggleItemActive = async (item: ContentItem, rowKey: string, active: boolean) => {
+    const section = item.section
+    const nextRows = (items[section] ?? []).map((it, i) => {
+      const key = it.id ?? `__row_${i}`
+      return key === rowKey ? { ...it, active } : it
+    })
+    setItems(prev => ({ ...prev, [section]: nextRows }))
+
+    setSavingId(rowKey)
+    setListStatus('saving')
+    setApiError('')
+    try {
+      const updated = nextRows.find((it, i) => (it.id ?? `__row_${i}`) === rowKey) ?? { ...item, active }
+      const isPreview = previewSections.has(section) || nextRows.every(it => !it.id)
+      if (!updated.id || isPreview) {
+        await syncSectionFromAdminState(section, nextRows)
+      } else {
+        await adminApi.updateItem({
+          id: updated.id,
+          title_ar: updated.title_ar, title_en: updated.title_en,
+          desc_ar: updated.desc_ar, desc_en: updated.desc_en,
+          icon: updated.icon || null, active: updated.active, sort_order: updated.sort_order,
+        })
+      }
+      setListStatus('saved')
+      setTimeout(() => setListStatus('idle'), 1500)
+    } catch (err) {
+      handleApiError(err)
+      setListStatus('error')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   const deleteItem = async (id?: string) => {
     if (!id) return
     if (!window.confirm('هل تريد حذف هذه البطاقة؟ لا يمكن التراجع إلا من النسخة الاحتياطية.')) return
     try {
       await adminApi.deleteItem(id)
-      setItems(prev => {
-        const next: Record<string, ContentItem[]> = {}
-        for (const [sec, arr] of Object.entries(prev)) next[sec] = arr.filter(it => it.id !== id)
-        return next
-      })
+      await reloadItemsFromDb()
     } catch (err) {
       handleApiError(err)
     }
@@ -756,7 +847,8 @@ export default function AdminDashboard() {
   const navItems: Array<{ id: Tab; label: string; Icon: React.ElementType; badge: number }> = [
     { id: 'messages', label: 'رسائل التواصل', Icon: MessageSquare, badge: unreadCount },
     { id: 'content',  label: 'نصوص الموقع',  Icon: Settings, badge: 0 },
-    { id: 'lists',    label: 'الأقسام والبطاقات', Icon: LayoutList, badge: 0 },
+    { id: 'lists',    label: 'إعادة هيكلة البطاقات', Icon: LayoutList, badge: 0 },
+    { id: 'layout',   label: 'ترتيب الأقسام', Icon: LayoutGrid, badge: 0 },
     { id: 'partners', label: 'شركاء النجاح',   Icon: Handshake, badge: 0 },
     { id: 'photos',   label: 'صور الموقع',     Icon: ImageIcon, badge: 0 },
   ]
@@ -764,7 +856,8 @@ export default function AdminDashboard() {
   const titleMap: Record<Tab, string> = {
     messages: 'رسائل التواصل',
     content: 'تعديل نصوص الموقع',
-    lists: 'الأقسام والبطاقات',
+    lists: 'إعادة هيكلة البطاقات',
+    layout: 'ترتيب أقسام الصفحة الرئيسية',
     partners: 'إدارة شركاء النجاح',
     photos: 'صور الموقع',
   }
@@ -1088,6 +1181,7 @@ export default function AdminDashboard() {
                                 onAdd={() => addItem(sec.section)}
                                 onPatch={(id, f, v) => patchItem(sec.section, id, f, v)}
                                 onSave={(item, key) => saveItem(item, key)}
+                                onToggleActive={(item, key, active) => toggleItemActive(item, key, active)}
                                 onDelete={deleteItem}
                                 onMove={(index, dir) => moveItem(sec.section, index, dir)}
                               />
@@ -1148,6 +1242,7 @@ export default function AdminDashboard() {
                     onAdd={() => addItem(sec.section)}
                     onPatch={(id, field, val) => patchItem(sec.section, id, field, val)}
                     onSave={(item, key) => saveItem(item, key)}
+                    onToggleActive={(item, key, active) => toggleItemActive(item, key, active)}
                     onDelete={deleteItem}
                     onMove={(index, dir) => moveItem(sec.section, index, dir)}
                   />
@@ -1161,6 +1256,58 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* ─── Layout Tab (homepage section order) ─── */}
+          {tab === 'layout' && (
+            <div style={{ maxWidth: 920 }}>
+              <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 18, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7 }}>
+                حدّد ترتيب ظهور أقسام الصفحة الرئيسية بالرقم، وألغِ «ظاهر» لإخفاء قسم بالكامل. اضغط «حفظ الترتيب» بعد التعديل.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[...homepageLayout].sort((a, b) => a.order - b.order).map((entry, index) => {
+                  const meta = HOMEPAGE_SECTIONS.find(s => s.id === entry.id)
+                  if (!meta) return null
+                  return (
+                    <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: C.panel, border: `1px solid ${entry.visible ? C.border : '#FECACA'}`, borderRadius: 12, opacity: entry.visible ? 1 : 0.75 }}>
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={entry.order}
+                        onChange={e => patchLayoutEntry(entry.id, { order: Number(e.target.value) || 1 })}
+                        style={{ width: 64, padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, textAlign: 'center' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: C.text }}>{meta.titleAr}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: C.dim }}>{meta.titleEn}</p>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={entry.visible} onChange={e => patchLayoutEntry(entry.id, { visible: e.target.checked })} />
+                        ظاهر
+                      </label>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button type="button" disabled={index === 0} onClick={() => moveLayoutEntry(index, -1)} style={{ padding: 8, borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff', cursor: index === 0 ? 'not-allowed' : 'pointer' }}>
+                          <ArrowUp size={14} />
+                        </button>
+                        <button type="button" disabled={index === homepageLayout.length - 1} onClick={() => moveLayoutEntry(index, 1)} style={{ padding: 8, borderRadius: 8, border: `1px solid ${C.border}`, background: '#fff', cursor: index === homepageLayout.length - 1 ? 'not-allowed' : 'pointer' }}>
+                          <ArrowDown size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button type="button" onClick={saveHomepageLayout} disabled={layoutStatus === 'saving'}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: layoutStatus === 'saving' ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                  {layoutStatus === 'saving' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  حفظ الترتيب
+                </button>
+                {layoutStatus === 'saved' && <StatusOK text="تم حفظ الترتيب" />}
+                {layoutStatus === 'error' && <StatusErr text="حدث خطأ" />}
+              </div>
+            </div>
+          )}
+
           {/* ─── Photos Tab ─── */}
           {tab === 'photos' && (() => {
             const PHOTOS = [
@@ -1168,6 +1315,7 @@ export default function AdminDashboard() {
               { key: 'team-main',     labelAr: 'الصورة الرئيسية لقسم «فريقنا»', section: 'فريقنا',              original: '/assets/consultation.jpg' },
               { key: 'team-floating', labelAr: 'الصورة الصغيرة العائمة (فريق)', section: 'فريقنا',             original: '/assets/digital-law.jpg' },
               { key: 'goals-bg',      labelAr: 'خلفية الأهداف الاستراتيجية',    section: 'أهدافنا الاستراتيجية', original: '/assets/global-reach.jpg' },
+              { key: 'clients-bg',    labelAr: 'خلفية قسم «عملاؤنا»',           section: 'عملاؤنا',            original: '/assets/global-reach.jpg' },
             ]
             const CLOSING_PHOTOS = [
               { key: 'closing-bg', labelAr: 'خلفية القسم (صورة كاملة خلف النص)', original: '/assets/scales-dramatic.jpg', toggleKey: 'show_bg' as const, toggleLabel: '✓ إظهار صورة الخلفية على الموقع', defaultOn: true },
@@ -1277,6 +1425,54 @@ export default function AdminDashboard() {
                       )
                     })}
                   </div>
+                </div>
+
+                <div style={{ marginBottom: 20, maxWidth: 920 }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 800, color: C.text }}>خلفية قسم «عملاؤنا»</h3>
+                  <p style={{ margin: '0 0 10px', fontSize: 12, color: C.dim, lineHeight: 1.6 }}>
+                    ارفع صورة خلفية خفيفة لقسم عملاؤنا، ثم فعّل أو ألغِ إظهارها.
+                  </p>
+                  {(() => {
+                    const key = 'clients-bg'
+                    const current = photoUrls[key]
+                    const isCustom = !!current
+                    const isUploading = photoUploading === key
+                    const displaySrc = current || '/assets/global-reach.jpg'
+                    const toggleOn = clientsBgFlag()
+                    return (
+                      <div style={{ background: C.panel, border: `1px solid ${toggleOn ? C.gold : C.border}`, borderRadius: 14, overflow: 'hidden', maxWidth: 460 }}>
+                        <div style={{ position: 'relative', height: 160, background: '#1A1A1A', overflow: 'hidden' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={displaySrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isUploading ? 0.4 : 0.85 }} />
+                          {isUploading && (
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Loader2 size={28} style={{ color: C.gold, animation: 'spin 1s linear infinite' }} />
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ padding: '14px 16px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer', fontSize: 13, color: C.muted }}>
+                            <input type="checkbox" checked={toggleOn} onChange={e => setClientsPhotoFlag(e.target.checked)} />
+                            ✓ إظهار صورة الخلفية على الموقع
+                          </label>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.gold, color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isUploading ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                              <Upload size={14} />
+                              {isCustom ? 'تغيير الصورة' : 'رفع صورة'}
+                              <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }} disabled={isUploading}
+                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(key, f); e.target.value = '' }} />
+                            </label>
+                            {isCustom && (
+                              <button type="button" onClick={() => restorePhoto(key)} disabled={isUploading}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.soft, border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 13, cursor: isUploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                <RotateCcw size={13} /> حذف الصورة
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16, maxWidth: 900 }}>
@@ -1398,7 +1594,11 @@ export default function AdminDashboard() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
-                          <input type="checkbox" checked={!!p.active} onChange={e => patchPartner(p.id!, 'active', e.target.checked)} style={{ accentColor: C.gold, width: 16, height: 16 }} />
+                          <input type="checkbox" checked={!!p.active} onChange={e => {
+                            const active = e.target.checked
+                            patchPartner(p.id!, 'active', active)
+                            savePartner({ ...p, active })
+                          }} style={{ accentColor: C.gold, width: 16, height: 16 }} />
                           ظاهر في الموقع
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted }}>
@@ -1433,7 +1633,7 @@ export default function AdminDashboard() {
 }
 
 function ListSectionEditor({
-  sec, rows, isPreview, isMobile, savingId, onAdd, onPatch, onSave, onDelete, onMove,
+  sec, rows, isPreview, isMobile, savingId, onAdd, onPatch, onSave, onToggleActive, onDelete, onMove,
 }: {
   sec: ListSection
   rows: ContentItem[]
@@ -1443,6 +1643,7 @@ function ListSectionEditor({
   onAdd: () => void
   onPatch: (rowKey: string, field: keyof ContentItem, val: ContentItem[keyof ContentItem]) => void
   onSave: (item: ContentItem, rowKey: string) => void
+  onToggleActive: (item: ContentItem, rowKey: string, active: boolean) => void
   onDelete: (id?: string) => void
   onMove: (index: number, dir: 'up' | 'down') => void
 }) {
@@ -1523,7 +1724,7 @@ function ListSectionEditor({
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={!!item.active} onChange={e => onPatch(rowKey, 'active', e.target.checked)} style={{ accentColor: C.gold, width: 16, height: 16 }} />
+                  <input type="checkbox" checked={!!item.active} onChange={e => onToggleActive(item, rowKey, e.target.checked)} style={{ accentColor: C.gold, width: 16, height: 16 }} />
                   ظاهر في الموقع
                 </label>
                 <div style={{ marginInlineStart: 'auto', display: 'flex', gap: 8 }}>

@@ -1,7 +1,8 @@
 'use client'
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { SiteContent, ContentItem, Partner } from '@/lib/supabase'
-import { defaultListItems } from '@/lib/contentSchema'
+import { defaultListItems, parseHomepageLayout } from '@/lib/contentSchema'
+import type { PublicContentPayload } from '@/lib/content-server'
 import type { Lang } from '@/lib/translations'
 
 /**
@@ -25,35 +26,61 @@ type ContentValue = {
   list: (section: string, fallback: LocalItem[]) => LocalItem[]
   extras: (section: string) => ExtraField[]
   partners: Partner[]
+  partnersSeeded: boolean
+  sectionLayout: () => { id: string; order: number; visible: boolean }[]
 }
 
 const ContentContext = createContext<ContentValue | null>(null)
 
-type Payload = {
-  site_content: SiteContent[]
-  content_items: ContentItem[]
-  partners: Partner[]
+type Payload = PublicContentPayload
+
+function buildStateFromPayload(payload: Payload) {
+  const nextScalars: Record<string, SiteContent> = {}
+  for (const row of payload.site_content) {
+    nextScalars[`${row.section}.${row.key}`] = row
+  }
+
+  const nextItems: Record<string, ContentItem[]> = {}
+  for (const row of payload.content_items) {
+    ;(nextItems[row.section] ??= []).push(row)
+  }
+
+  return {
+    scalars: nextScalars,
+    items: nextItems,
+    partners: payload.partners,
+    seededSections: new Set(payload.list_section_keys ?? []),
+    managedSections: new Set(payload.managed_list_sections ?? []),
+    partnersSeeded: payload.partners_seeded ?? false,
+  }
 }
 
-export function ContentProvider({ lang, children }: { lang: Lang; children: React.ReactNode }) {
-  const [scalars, setScalars] = useState<Record<string, SiteContent>>({})
-  const [items, setItems] = useState<Record<string, ContentItem[]>>({})
-  const [partners, setPartners] = useState<Partner[]>([])
-  const [loading, setLoading] = useState(true)
+export function ContentProvider({
+  lang,
+  children,
+  initialData,
+}: {
+  lang: Lang
+  children: React.ReactNode
+  initialData?: Payload | null
+}) {
+  const initial = initialData ? buildStateFromPayload(initialData) : null
+  const [scalars, setScalars] = useState<Record<string, SiteContent>>(initial?.scalars ?? {})
+  const [items, setItems] = useState<Record<string, ContentItem[]>>(initial?.items ?? {})
+  const [partners, setPartners] = useState<Partner[]>(initial?.partners ?? [])
+  const [seededSections, setSeededSections] = useState<Set<string>>(initial?.seededSections ?? new Set())
+  const [managedSections, setManagedSections] = useState<Set<string>>(initial?.managedSections ?? new Set())
+  const [partnersSeeded, setPartnersSeeded] = useState(initial?.partnersSeeded ?? false)
+  const [loading, setLoading] = useState(!initialData)
 
   const applyPayload = useCallback((payload: Payload) => {
-    const nextScalars: Record<string, SiteContent> = {}
-    for (const row of payload.site_content) {
-      nextScalars[`${row.section}.${row.key}`] = row
-    }
-    setScalars(nextScalars)
-
-    const nextItems: Record<string, ContentItem[]> = {}
-    for (const row of payload.content_items) {
-      ;(nextItems[row.section] ??= []).push(row)
-    }
-    setItems(nextItems)
-    setPartners(payload.partners)
+    const next = buildStateFromPayload(payload)
+    setScalars(next.scalars)
+    setItems(next.items)
+    setPartners(next.partners)
+    setSeededSections(next.seededSections)
+    setManagedSections(next.managedSections)
+    setPartnersSeeded(next.partnersSeeded)
   }, [])
 
   const fetchContent = useCallback(async () => {
@@ -146,6 +173,8 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
   const list = useCallback(
     (section: string, fallback: LocalItem[]) => {
       const rows = items[section]
+      const isKnown = seededSections.has(section) || managedSections.has(section)
+      if (isKnown && (!rows || rows.length === 0)) return []
       if (!rows || rows.length === 0) return fallback
       const defaults = defaultListItems(section)
       return rows.map((r, i) => ({
@@ -155,8 +184,14 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
         icon: r.icon ?? defaults[i]?.icon ?? fallback[i]?.icon ?? null,
       }))
     },
-    [items, lang],
+    [items, lang, seededSections, managedSections],
   )
+
+  const sectionLayout = useCallback(() => {
+    const row = scalars['layout.homepage_sections']
+    const raw = row?.value_ar || row?.value_en || ''
+    return parseHomepageLayout(raw)
+  }, [scalars])
 
   const extras = useCallback(
     (section: string): ExtraField[] => {
@@ -178,7 +213,7 @@ export function ContentProvider({ lang, children }: { lang: Lang; children: Reac
   )
 
   return (
-    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, heroCarousel, enabled, hidden, list, extras, partners }}>
+    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, heroCarousel, enabled, hidden, list, extras, partners, partnersSeeded, sectionLayout }}>
       {children}
     </ContentContext.Provider>
   )
@@ -199,6 +234,8 @@ export function useContent(): ContentValue {
       list: (_s, fallback) => fallback,
       extras: () => [],
       partners: [],
+      partnersSeeded: false,
+      sectionLayout: () => parseHomepageLayout(''),
     }
   }
   return ctx

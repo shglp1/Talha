@@ -59,17 +59,6 @@ export const FIELD_GROUPS: FieldGroup[] = [
     ],
   },
   {
-    id: 'contactInfo',
-    titleAr: 'معلومات التواصل',
-    titleEn: 'Contact Details',
-    fields: [
-      { section: 'hero', key: 'phone',   labelAr: 'رقم الهاتف',        labelEn: 'Phone Number',  def: { ar: t.ar.contact.phone,   en: t.en.contact.phone } },
-      { section: 'hero', key: 'email',   labelAr: 'البريد الإلكتروني', labelEn: 'Email Address', def: { ar: t.ar.contact.email,   en: t.en.contact.email } },
-      { section: 'hero', key: 'address', labelAr: 'العنوان',           labelEn: 'Address',       def: { ar: t.ar.contact.address, en: t.en.contact.address } },
-      { section: 'hero', key: 'hours',   labelAr: 'ساعات العمل',       labelEn: 'Working Hours', def: { ar: t.ar.contact.hours,   en: t.en.contact.hours } },
-    ],
-  },
-  {
     id: 'about',
     titleAr: 'قسم: من نحن',
     titleEn: 'About Section',
@@ -81,16 +70,6 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'about', key: 'body3', labelAr: 'الفقرة 3',  labelEn: 'Paragraph 3', multiline: true, def: { ar: t.ar.about.body3, en: t.en.about.body3 } },
       { section: 'about', key: 'years_value',   labelAr: 'بطاقة الخبرة — الرقم (مثل 15+)',     labelEn: 'Experience badge — number', def: { ar: '15+', en: '15+' } },
       { section: 'about', key: 'years_caption', labelAr: 'بطاقة الخبرة — النص',               labelEn: 'Experience badge — text',   multiline: true, def: { ar: 'سنوات من الخبرة القانونية المتخصصة', en: 'Years of specialized legal expertise' } },
-    ],
-  },
-  {
-    id: 'services',
-    titleAr: 'قسم: خدماتنا (العناوين)',
-    titleEn: 'Services Section (Headings)',
-    fields: [
-      { section: 'services', key: 'badge',    labelAr: 'الشارة',       labelEn: 'Badge',    def: { ar: t.ar.services.badge,    en: t.en.services.badge } },
-      { section: 'services', key: 'title',    labelAr: 'العنوان',      labelEn: 'Title',    def: { ar: t.ar.services.title,    en: t.en.services.title } },
-      { section: 'services', key: 'subtitle', labelAr: 'النص الفرعي',  labelEn: 'Subtitle', multiline: true, def: { ar: t.ar.services.subtitle, en: t.en.services.subtitle } },
     ],
   },
   {
@@ -106,6 +85,16 @@ export const FIELD_GROUPS: FieldGroup[] = [
     ],
   },
   {
+    id: 'services',
+    titleAr: 'قسم: خدماتنا (العناوين)',
+    titleEn: 'Services Section (Headings)',
+    fields: [
+      { section: 'services', key: 'badge',    labelAr: 'الشارة',       labelEn: 'Badge',    def: { ar: t.ar.services.badge,    en: t.en.services.badge } },
+      { section: 'services', key: 'title',    labelAr: 'العنوان',      labelEn: 'Title',    def: { ar: t.ar.services.title,    en: t.en.services.title } },
+      { section: 'services', key: 'subtitle', labelAr: 'النص الفرعي',  labelEn: 'Subtitle', multiline: true, def: { ar: t.ar.services.subtitle, en: t.en.services.subtitle } },
+    ],
+  },
+  {
     id: 'whyUs',
     titleAr: 'قسم: لماذا نحن (العناوين)',
     titleEn: 'Why Us Section (Headings)',
@@ -113,6 +102,49 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'whyUs', key: 'badge',    labelAr: 'الشارة',      labelEn: 'Badge',    def: { ar: t.ar.whyUs.badge,    en: t.en.whyUs.badge } },
       { section: 'whyUs', key: 'title',    labelAr: 'العنوان',     labelEn: 'Title',    def: { ar: t.ar.whyUs.title,    en: t.en.whyUs.title } },
       { section: 'whyUs', key: 'subtitle', labelAr: 'النص الفرعي', labelEn: 'Subtitle', multiline: true, def: { ar: t.ar.whyUs.subtitle, en: t.en.whyUs.subtitle } },
+    ],
+  },
+  {
+    id: 'clients',
+    titleAr: 'قسم: عملاؤنا',
+    titleEn: 'Clients Section',
+    fields: [
+      { section: 'clients', key: 'badge', labelAr: 'الشارة',  labelEn: 'Badge', def: { ar: t.ar.clients.badge, en: t.en.clients.badge } },
+      { section: 'clients', key: 'title', labelAr: 'العنوان', labelEn: 'Title', def: { ar: t.ar.clients.title, en: t.en.clients.title } },
+      { section: 'clients', key: 'body',  labelAr: 'النص',    labelEn: 'Body',  multiline: true, def: { ar: t.ar.clients.body, en: t.en.clients.body } },
+      { section: 'clients', key: 'show_bg', labelAr: 'إظهار صورة الخلفية', labelEn: 'Show background photo', def: { ar: '1', en: '1' } },
+    ],
+  },
+  {
+    id: 'partners',
+    titleAr: 'قسم: شركاء النجاح (العناوين)',
+    titleEn: 'Partners Section (Headings)',
+    fields: [
+      { section: 'partners', key: 'badge',    labelAr: 'الشارة',      labelEn: 'Badge',    def: { ar: t.ar.partners.badge,    en: t.en.partners.badge } },
+      { section: 'partners', key: 'title',    labelAr: 'العنوان',     labelEn: 'Title',    def: { ar: t.ar.partners.title,    en: t.en.partners.title } },
+      { section: 'partners', key: 'subtitle', labelAr: 'النص الفرعي', labelEn: 'Subtitle', multiline: true, def: { ar: t.ar.partners.subtitle, en: t.en.partners.subtitle } },
+    ],
+  },
+  {
+    id: 'contact',
+    titleAr: 'نموذج التواصل',
+    titleEn: 'Contact Form',
+    fields: [
+      { section: 'contact', key: 'badge',              labelAr: 'الشارة',                labelEn: 'Badge',              def: { ar: t.ar.contact.badge,              en: t.en.contact.badge } },
+      { section: 'contact', key: 'title',              labelAr: 'العنوان',               labelEn: 'Title',              def: { ar: t.ar.contact.title,              en: t.en.contact.title } },
+      { section: 'contact', key: 'subtitle',           labelAr: 'النص الفرعي',           labelEn: 'Subtitle',           multiline: true, def: { ar: t.ar.contact.subtitle,           en: t.en.contact.subtitle } },
+      { section: 'contact', key: 'namePlaceholder',    labelAr: 'حقل الاسم',             labelEn: 'Name field',         def: { ar: t.ar.contact.namePlaceholder,    en: t.en.contact.namePlaceholder } },
+      { section: 'contact', key: 'phonePlaceholder',   labelAr: 'حقل الجوال',            labelEn: 'Phone field',        def: { ar: t.ar.contact.phonePlaceholder,   en: t.en.contact.phonePlaceholder } },
+      { section: 'contact', key: 'emailPlaceholder',   labelAr: 'حقل البريد',            labelEn: 'Email field',        def: { ar: t.ar.contact.emailPlaceholder,   en: t.en.contact.emailPlaceholder } },
+      { section: 'contact', key: 'messagePlaceholder', labelAr: 'حقل الرسالة',           labelEn: 'Message field',      def: { ar: t.ar.contact.messagePlaceholder, en: t.en.contact.messagePlaceholder } },
+      { section: 'contact', key: 'send',               labelAr: 'زر الإرسال',            labelEn: 'Send button',        def: { ar: t.ar.contact.send,               en: t.en.contact.send } },
+      { section: 'contact', key: 'sending',            labelAr: 'نص أثناء الإرسال',      labelEn: 'Sending text',       def: { ar: t.ar.contact.sending,            en: t.en.contact.sending } },
+      { section: 'contact', key: 'success',            labelAr: 'رسالة النجاح',          labelEn: 'Success message',    multiline: true, def: { ar: t.ar.contact.success,            en: t.en.contact.success } },
+      { section: 'contact', key: 'error',              labelAr: 'رسالة الخطأ',           labelEn: 'Error message',      multiline: true, def: { ar: t.ar.contact.error,              en: t.en.contact.error } },
+      { section: 'contact', key: 'mapTitle',           labelAr: 'عنوان الخريطة',         labelEn: 'Map title',          def: { ar: t.ar.contact.mapTitle,           en: t.en.contact.mapTitle } },
+      { section: 'hero', key: 'phone',   labelAr: 'رقم الهاتف (بطاقات التواصل)', labelEn: 'Phone (contact cards)',  def: { ar: t.ar.contact.phone,   en: t.en.contact.phone } },
+      { section: 'hero', key: 'email',   labelAr: 'البريد (بطاقات التواصل)',    labelEn: 'Email (contact cards)',  def: { ar: t.ar.contact.email,   en: t.en.contact.email } },
+      { section: 'hero', key: 'hours',   labelAr: 'ساعات العمل (بطاقة التواصل)', labelEn: 'Working hours (contact card)', def: { ar: t.ar.contact.hours, en: t.en.contact.hours } },
     ],
   },
   {
@@ -133,26 +165,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'team', key: 'badge', labelAr: 'الشارة',  labelEn: 'Badge', def: { ar: t.ar.team.badge, en: t.en.team.badge } },
       { section: 'team', key: 'title', labelAr: 'العنوان', labelEn: 'Title', def: { ar: t.ar.team.title, en: t.en.team.title } },
       { section: 'team', key: 'body',  labelAr: 'النص',    labelEn: 'Body',  multiline: true, def: { ar: t.ar.team.body, en: t.en.team.body } },
-    ],
-  },
-  {
-    id: 'clients',
-    titleAr: 'قسم: عملاؤنا',
-    titleEn: 'Clients Section',
-    fields: [
-      { section: 'clients', key: 'badge', labelAr: 'الشارة',  labelEn: 'Badge', def: { ar: t.ar.clients.badge, en: t.en.clients.badge } },
-      { section: 'clients', key: 'title', labelAr: 'العنوان', labelEn: 'Title', def: { ar: t.ar.clients.title, en: t.en.clients.title } },
-      { section: 'clients', key: 'body',  labelAr: 'النص',    labelEn: 'Body',  multiline: true, def: { ar: t.ar.clients.body, en: t.en.clients.body } },
-    ],
-  },
-  {
-    id: 'partners',
-    titleAr: 'قسم: شركاء النجاح (العناوين)',
-    titleEn: 'Partners Section (Headings)',
-    fields: [
-      { section: 'partners', key: 'badge',    labelAr: 'الشارة',      labelEn: 'Badge',    def: { ar: t.ar.partners.badge,    en: t.en.partners.badge } },
-      { section: 'partners', key: 'title',    labelAr: 'العنوان',     labelEn: 'Title',    def: { ar: t.ar.partners.title,    en: t.en.partners.title } },
-      { section: 'partners', key: 'subtitle', labelAr: 'النص الفرعي', labelEn: 'Subtitle', multiline: true, def: { ar: t.ar.partners.subtitle, en: t.en.partners.subtitle } },
+      { section: 'team', key: 'specTitle', labelAr: 'عنوان «مجالات تخصصنا»', labelEn: 'Specializations heading', def: { ar: 'مجالات تخصصنا', en: 'Our Specializations' } },
     ],
   },
   {
@@ -168,30 +181,16 @@ export const FIELD_GROUPS: FieldGroup[] = [
     ],
   },
   {
-    id: 'contact',
-    titleAr: 'نموذج التواصل',
-    titleEn: 'Contact Form',
-    fields: [
-      { section: 'contact', key: 'badge',              labelAr: 'الشارة',                labelEn: 'Badge',              def: { ar: t.ar.contact.badge,              en: t.en.contact.badge } },
-      { section: 'contact', key: 'title',              labelAr: 'العنوان',               labelEn: 'Title',              def: { ar: t.ar.contact.title,              en: t.en.contact.title } },
-      { section: 'contact', key: 'subtitle',           labelAr: 'النص الفرعي',           labelEn: 'Subtitle',           multiline: true, def: { ar: t.ar.contact.subtitle,           en: t.en.contact.subtitle } },
-      { section: 'contact', key: 'namePlaceholder',    labelAr: 'حقل الاسم',             labelEn: 'Name field',         def: { ar: t.ar.contact.namePlaceholder,    en: t.en.contact.namePlaceholder } },
-      { section: 'contact', key: 'phonePlaceholder',   labelAr: 'حقل الجوال',            labelEn: 'Phone field',        def: { ar: t.ar.contact.phonePlaceholder,   en: t.en.contact.phonePlaceholder } },
-      { section: 'contact', key: 'emailPlaceholder',   labelAr: 'حقل البريد',            labelEn: 'Email field',        def: { ar: t.ar.contact.emailPlaceholder,   en: t.en.contact.emailPlaceholder } },
-      { section: 'contact', key: 'messagePlaceholder', labelAr: 'حقل الرسالة',           labelEn: 'Message field',      def: { ar: t.ar.contact.messagePlaceholder, en: t.en.contact.messagePlaceholder } },
-      { section: 'contact', key: 'send',               labelAr: 'زر الإرسال',            labelEn: 'Send button',        def: { ar: t.ar.contact.send,               en: t.en.contact.send } },
-      { section: 'contact', key: 'sending',            labelAr: 'نص أثناء الإرسال',      labelEn: 'Sending text',       def: { ar: t.ar.contact.sending,            en: t.en.contact.sending } },
-      { section: 'contact', key: 'success',            labelAr: 'رسالة النجاح',          labelEn: 'Success message',    multiline: true, def: { ar: t.ar.contact.success,            en: t.en.contact.success } },
-      { section: 'contact', key: 'error',              labelAr: 'رسالة الخطأ',           labelEn: 'Error message',      multiline: true, def: { ar: t.ar.contact.error,              en: t.en.contact.error } },
-      { section: 'contact', key: 'mapTitle',           labelAr: 'عنوان الخريطة',         labelEn: 'Map title',          def: { ar: t.ar.contact.mapTitle,           en: t.en.contact.mapTitle } },
-    ],
-  },
-  {
     id: 'footer',
     titleAr: 'التذييل',
     titleEn: 'Footer',
     fields: [
+      { section: 'footer', key: 'phone',   labelAr: 'رقم الهاتف',        labelEn: 'Phone number',  def: { ar: t.ar.contact.phone,   en: t.en.contact.phone } },
+      { section: 'footer', key: 'email',   labelAr: 'البريد الإلكتروني', labelEn: 'Email address', def: { ar: t.ar.contact.email,   en: t.en.contact.email } },
+      { section: 'footer', key: 'address', labelAr: 'العنوان',           labelEn: 'Address',       multiline: true, def: { ar: t.ar.contact.address, en: t.en.contact.address } },
+      { section: 'footer', key: 'whatsapp', labelAr: 'رابط واتساب', labelEn: 'WhatsApp link', def: { ar: 'https://api.whatsapp.com/send/?phone=966148444555&text&type=phone_number&app_absent=0', en: 'https://api.whatsapp.com/send/?phone=966148444555&text&type=phone_number&app_absent=0' } },
       { section: 'footer', key: 'tagline', labelAr: 'الجملة في التذييل (وسط التذييل)', labelEn: 'Footer tagline (centered)', multiline: true, def: { ar: t.ar.footer.tagline, en: t.en.footer.tagline } },
+      { section: 'footer', key: 'officeName', labelAr: 'اسم المكتب (سطر حقوق النشر)', labelEn: 'Office name (copyright line)', def: { ar: 'مكتب د. طلحة غوث للمحاماة والاستشارات القانونية.', en: 'Dr. Talha Ghawth Law Office.' } },
       { section: 'footer', key: 'rights',  labelAr: 'حقوق النشر', labelEn: 'Rights', def: { ar: t.ar.footer.rights, en: t.en.footer.rights } },
     ],
   },
@@ -432,16 +431,6 @@ export const LIST_SECTIONS: ListSection[] = [
     recommendedIcons: ['Target', 'Eye', 'Brain', 'Zap', 'Lock', 'Award', 'Handshake'],
   },
   {
-    section: 'goals',
-    titleAr: 'بطاقات الأهداف الاستراتيجية',
-    titleEn: 'Strategic Goal Cards',
-    hintAr: 'الأهداف التي تظهر في قسم «أهدافنا الاستراتيجية».',
-    hasDesc: true,
-    variant: 'card',
-    addLabelAr: 'إضافة بطاقة هدف',
-    recommendedIcons: ['Award', 'UserCheck', 'Lightbulb', 'TrendingUp', 'BookOpen', 'Brain', 'Gem'],
-  },
-  {
     section: 'clients_stats',
     titleAr: 'أرقام قسم «عملاؤنا»',
     titleEn: 'Client Section Stats',
@@ -450,6 +439,16 @@ export const LIST_SECTIONS: ListSection[] = [
     variant: 'stat',
     addLabelAr: 'إضافة رقم إحصائي',
     recommendedIcons: [],
+  },
+  {
+    section: 'clients_sectors',
+    titleAr: 'القطاعات التي نخدمها',
+    titleEn: 'Client Sectors',
+    hintAr: 'القطاعات التي تظهر في قسم «عملاؤنا» (عنوان وأيقونة فقط).',
+    hasDesc: false,
+    variant: 'chip',
+    addLabelAr: 'إضافة قطاع',
+    recommendedIcons: ['Crown', 'Users', 'Landmark', 'GitBranch', 'Briefcase', 'Globe', 'Hotel', 'BarChart2'],
   },
   {
     section: 'team_specializations',
@@ -462,13 +461,81 @@ export const LIST_SECTIONS: ListSection[] = [
     recommendedIcons: ['Building2', 'Landmark', 'Scroll', 'Users', 'Gavel', 'TrendingUp'],
   },
   {
-    section: 'clients_sectors',
-    titleAr: 'القطاعات التي نخدمها',
-    titleEn: 'Client Sectors',
-    hintAr: 'القطاعات التي تظهر في قسم «عملاؤنا» (عنوان وأيقونة فقط).',
-    hasDesc: false,
-    variant: 'chip',
-    addLabelAr: 'إضافة قطاع',
-    recommendedIcons: ['Crown', 'Users', 'Landmark', 'GitBranch', 'Briefcase', 'Globe', 'Hotel', 'BarChart2'],
+    section: 'goals',
+    titleAr: 'بطاقات الأهداف الاستراتيجية',
+    titleEn: 'Strategic Goal Cards',
+    hintAr: 'الأهداف التي تظهر في قسم «أهدافنا الاستراتيجية».',
+    hasDesc: true,
+    variant: 'card',
+    addLabelAr: 'إضافة بطاقة هدف',
+    recommendedIcons: ['Award', 'UserCheck', 'Lightbulb', 'TrendingUp', 'BookOpen', 'Brain', 'Gem'],
   },
 ]
+
+// ─── Homepage section ordering ───────────────────────────────────────────────
+
+export type HomepageSectionDef = {
+  id: string
+  titleAr: string
+  titleEn: string
+  defaultOrder: number
+  defaultVisible: boolean
+}
+
+export const HOMEPAGE_SECTIONS: HomepageSectionDef[] = [
+  { id: 'hero',          titleAr: 'الواجهة الرئيسية',     titleEn: 'Hero',              defaultOrder: 1,  defaultVisible: true },
+  { id: 'about',         titleAr: 'من نحن',               titleEn: 'About',             defaultOrder: 2,  defaultVisible: true },
+  { id: 'visionMission', titleAr: 'رؤية ورسالة',          titleEn: 'Vision & Mission',  defaultOrder: 3,  defaultVisible: true },
+  { id: 'services',      titleAr: 'خدماتنا',              titleEn: 'Services',          defaultOrder: 4,  defaultVisible: true },
+  { id: 'whyUs',         titleAr: 'لماذا نحن',            titleEn: 'Why Us',            defaultOrder: 5,  defaultVisible: true },
+  { id: 'clients',       titleAr: 'عملاؤنا',              titleEn: 'Clients',           defaultOrder: 6,  defaultVisible: true },
+  { id: 'partners',      titleAr: 'شركاء النجاح',         titleEn: 'Partners',          defaultOrder: 7,  defaultVisible: true },
+  { id: 'contact',       titleAr: 'تواصل معنا',           titleEn: 'Contact',           defaultOrder: 8,  defaultVisible: true },
+  { id: 'goals',         titleAr: 'أهدافنا الاستراتيجية', titleEn: 'Strategic Goals',   defaultOrder: 9,  defaultVisible: true },
+  { id: 'team',          titleAr: 'فريقنا',               titleEn: 'Team',              defaultOrder: 10, defaultVisible: true },
+  { id: 'closing',       titleAr: 'الاقتباس الختامي',     titleEn: 'Closing Statement', defaultOrder: 11, defaultVisible: true },
+]
+
+export function defaultHomepageLayout(): { id: string; order: number; visible: boolean }[] {
+  return HOMEPAGE_SECTIONS.map(s => ({
+    id: s.id,
+    order: s.defaultOrder,
+    visible: s.defaultVisible,
+  }))
+}
+
+export function parseHomepageLayout(raw: string): { id: string; order: number; visible: boolean }[] {
+  const defaults = defaultHomepageLayout()
+  if (!raw.trim()) return defaults.sort((a, b) => a.order - b.order)
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return defaults.sort((a, b) => a.order - b.order)
+    const map = new Map<string, { order: number; visible: boolean }>()
+    for (const entry of parsed) {
+      if (entry && typeof entry === 'object' && 'id' in entry) {
+        const id = String((entry as { id: unknown }).id)
+        const order = Number((entry as { order?: unknown }).order)
+        const visible = (entry as { visible?: unknown }).visible !== false
+        if (HOMEPAGE_SECTIONS.some(s => s.id === id)) {
+          map.set(id, { order: Number.isFinite(order) ? order : 99, visible })
+        }
+      }
+    }
+    return HOMEPAGE_SECTIONS.map(s => {
+      const o = map.get(s.id)
+      return {
+        id: s.id,
+        order: o?.order ?? s.defaultOrder,
+        visible: o?.visible ?? s.defaultVisible,
+      }
+    }).sort((a, b) => a.order - b.order)
+  } catch {
+    return defaults.sort((a, b) => a.order - b.order)
+  }
+}
+
+export function serializeHomepageLayout(
+  layout: { id: string; order: number; visible: boolean }[],
+): string {
+  return JSON.stringify(layout.map(({ id, order, visible }) => ({ id, order, visible })))
+}

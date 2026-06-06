@@ -23,8 +23,13 @@ export default function Contact({ lang }: { lang: Lang }) {
 
   const phone   = ov('hero', 'phone',   tr.contact.phone)
   const email   = ov('hero', 'email',   tr.contact.email)
-  const address = ov('hero', 'address', tr.contact.address)
   const hours   = ov('hero', 'hours',   tr.contact.hours)
+
+  const info = [
+    { Icon: Phone, label: phone, href: `tel:${phone.replace(/\s/g, '')}`, key: 'phone' as const },
+    { Icon: Mail,  label: email, href: `mailto:${email}`, key: 'email' as const },
+    { Icon: Clock, label: hours, href: undefined, key: 'hours' as const },
+  ].filter(row => !hidden('hero', row.key) && row.label.trim())
 
   const namePh    = ov('contact', 'namePlaceholder',    tr.contact.namePlaceholder)
   const phonePh   = ov('contact', 'phonePlaceholder',   tr.contact.phonePlaceholder)
@@ -58,13 +63,6 @@ export default function Contact({ lang }: { lang: Lang }) {
     }
   }
 
-  const info = [
-    { Icon: Phone,  label: phone,   href: `tel:${phone.replace(/\s/g, '')}` },
-    { Icon: Mail,   label: email,   href: `mailto:${email}` },
-    { Icon: MapPin, label: address, href: MAPS_URL },
-    { Icon: Clock,  label: hours,   href: undefined },
-  ]
-
   return (
     <section id="contact" className="section-padding bg-obsidian" dir={tr.dir}>
       <div className="section-container">
@@ -82,8 +80,8 @@ export default function Contact({ lang }: { lang: Lang }) {
           <div className={`lg:col-span-2 space-y-6 ${isAr ? 'reveal-right' : 'reveal-left'} reveal`}>
             {/* Info cards */}
             <div className="space-y-4">
-              {info.map(({ Icon, label, href }) => (
-                <div key={label} className="flex items-center gap-4 glass-card p-4">
+              {info.map(({ Icon, label, href, key }) => (
+                <div key={key} className="flex items-center gap-4 glass-card p-4">
                   <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
                     <Icon size={18} className="text-gold" />
                   </div>

@@ -29,6 +29,7 @@ export default function Services({ lang }: { lang: Lang }) {
         </div>
 
         {/* Grid */}
+        {items.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item, i) => {
             const Icon = getIcon(item.icon) ?? Scale
@@ -53,6 +54,7 @@ export default function Services({ lang }: { lang: Lang }) {
             )
           })}
         </div>
+        )}
 
         <SectionExtras section="services" />
       </div>

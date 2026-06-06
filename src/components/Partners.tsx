@@ -47,14 +47,16 @@ function PartnerCard({ name, logo, icon }: { name: string; logo?: string | null;
 export default function Partners({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, partners } = useContent()
+  const { ov, partners, partnersSeeded, loading } = useContent()
   const [itemsTarget, setItemsTarget] = useState(14)
 
-  // Normalise to a render list (DB partners, else bilingual defaults)
-  const base =
-    partners.length > 0
-      ? partners.map(p => ({ name: p.name, logo: p.logo_url, icon: p.icon }))
-      : DEFAULT_PARTNERS.map(p => ({ name: lang === 'ar' ? p.ar : p.en, logo: null, icon: null }))
+  const base = useMemo(() => {
+    if (partners.length > 0) {
+      return partners.map(p => ({ name: p.name, logo: p.logo_url, icon: p.icon }))
+    }
+    if (partnersSeeded || loading) return []
+    return DEFAULT_PARTNERS.map(p => ({ name: lang === 'ar' ? p.ar : p.en, logo: null, icon: null }))
+  }, [partners, partnersSeeded, loading, lang])
 
   // Dynamically target enough cards for large screens so no blank area appears.
   useEffect(() => {
@@ -75,6 +77,8 @@ export default function Partners({ lang }: { lang: Lang }) {
   const filled = useMemo(() => Array.from({ length: reps }).flatMap(() => base), [reps, base])
   // Constant visual speed: ~3.5s per item regardless of count.
   const duration = `${filled.length * 3.5}s`
+
+  if (base.length === 0) return null
 
   return (
     <section id="partners" className="section-padding bg-obsidian overflow-hidden" dir={tr.dir}>

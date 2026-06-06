@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePublicSite } from '@/lib/revalidate-site'
+import { markListSectionManaged } from '@/lib/list-meta'
+
+type SyncItem = {
+  title_ar?: string
+  title_en?: string
+  desc_ar?: string
+  desc_en?: string
+  icon?: string | null
+  active?: boolean
+  sort_order?: number
+}
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req)
@@ -22,6 +33,38 @@ export async function POST(req: NextRequest) {
   if ('error' in auth) return auth.error
 
   const body = await req.json().catch(() => null)
+
+  // Replace all rows in a section from admin state (respects active flags).
+  if (body?.syncSection && typeof body.syncSection === 'string' && Array.isArray(body.items)) {
+    const section = body.syncSection as string
+    const supabase = getAdminClient()
+
+    const { error: delErr } = await supabase.from('content_items').delete().eq('section', section)
+    if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
+
+    const rows = (body.items as SyncItem[]).map((it, i) => ({
+      section,
+      title_ar: it.title_ar ?? '',
+      title_en: it.title_en ?? '',
+      desc_ar: it.desc_ar ?? '',
+      desc_en: it.desc_en ?? '',
+      icon: it.icon ?? null,
+      sort_order: it.sort_order ?? i,
+      active: it.active ?? true,
+    }))
+
+    let inserted: unknown[] = []
+    if (rows.length > 0) {
+      const { data, error } = await supabase.from('content_items').insert(rows).select()
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      inserted = data ?? []
+    }
+
+    await markListSectionManaged(section)
+    revalidatePublicSite()
+    return NextResponse.json({ data: inserted })
+  }
+
   if (!body?.section) {
     return NextResponse.json({ error: 'section مطلوب' }, { status: 400 })
   }
@@ -43,6 +86,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await markListSectionManaged(body.section)
   revalidatePublicSite()
   return NextResponse.json({ data })
 }
@@ -72,6 +116,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   const supabase = getAdminClient()
+  const { data: existing } = await supabase
+    .from('content_items')
+    .select('section')
+    .eq('id', body.id)
+    .maybeSingle()
+
   const { error } = await supabase
     .from('content_items')
     .update({
@@ -86,6 +136,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', body.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (existing?.section) await markListSectionManaged(existing.section)
   revalidatePublicSite()
   return NextResponse.json({ success: true })
 }
@@ -99,8 +150,15 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id مطلوب' }, { status: 400 })
 
   const supabase = getAdminClient()
+  const { data: existing } = await supabase
+    .from('content_items')
+    .select('section')
+    .eq('id', id)
+    .maybeSingle()
+
   const { error } = await supabase.from('content_items').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (existing?.section) await markListSectionManaged(existing.section)
   revalidatePublicSite()
   return NextResponse.json({ success: true })
 }

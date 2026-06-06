@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import Chatbot from '@/components/Chatbot'
 import { ContentProvider } from '@/components/ContentProvider'
 import LangSync from '@/components/LangSync'
+import { getPublicContent } from '@/lib/content-server'
 import type { Lang } from '@/lib/translations'
 
 const validLangs: Lang[] = ['ar', 'en']
@@ -46,8 +47,15 @@ export default async function LangLayout({
   if (!validLangs.includes(rawLang as Lang)) notFound()
   const lang = rawLang as Lang
 
+  let initialData = null
+  try {
+    initialData = await getPublicContent()
+  } catch {
+    /* fall back to client fetch */
+  }
+
   return (
-    <ContentProvider lang={lang}>
+    <ContentProvider lang={lang} initialData={initialData}>
       <LangSync lang={lang} />
       <Navbar lang={lang} />
       <main className="w-full max-w-full overflow-x-clip">{children}</main>

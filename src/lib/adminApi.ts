@@ -74,6 +74,11 @@ export const adminApi = {
     fd.append('file', file)
     return request<{ url: string }>('/api/admin/upload', { method: 'POST', body: fd })
   },
+  syncSectionItems: (section: string, items: Record<string, unknown>[]) =>
+    request<{ data: unknown[] }>('/api/admin/items', {
+      method: 'POST',
+      body: JSON.stringify({ syncSection: section, items }),
+    }),
   seedDefaults: (section?: string) =>
     request<{ inserted: number }>('/api/admin/seed', {
       method: 'POST',

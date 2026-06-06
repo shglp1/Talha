@@ -4,21 +4,42 @@ import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
+import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
 
 export default function Clients({ lang }: { lang: Lang }) {
   const tr = t[lang]
   useScrollReveal()
-  const { ov, list, hidden } = useContent()
+  const { ov, list, hidden, photoUrl, enabled } = useContent()
 
   const sectors = list(
     'clients_sectors',
     tr.clients.sectors.map(s => ({ title: s.label, desc: '', icon: s.icon })),
   )
 
+  const clientStats = list('clients_stats', [
+    { title: '500+', desc: lang === 'ar' ? 'عميل راضٍ' : 'Satisfied Clients', icon: null },
+    { title: '8+', desc: lang === 'ar' ? 'قطاعات خدمية' : 'Service Sectors', icon: null },
+    { title: '15+', desc: lang === 'ar' ? 'سنة خبرة' : 'Years Experience', icon: null },
+    { title: '100%', desc: lang === 'ar' ? 'سرية تامة' : 'Full Confidentiality', icon: null },
+  ])
+
   return (
-    <section id="clients" className="section-padding" style={{ background: 'var(--surface)' }} dir={tr.dir}>
-      <div className="section-container">
+    <section id="clients" className="section-padding relative overflow-hidden" style={{ background: 'var(--surface)' }} dir={tr.dir}>
+      {enabled('clients', 'show_bg') && (
+        <div className="absolute inset-0 z-0">
+          <SitePhoto
+            src={photoUrl('clients-bg', '/assets/global-reach.jpg')}
+            fallback="/assets/global-reach.jpg"
+            alt=""
+            fill
+            quality={70}
+            className="object-cover object-center opacity-[0.06]"
+          />
+        </div>
+      )}
+
+      <div className="relative z-10 section-container">
         {/* Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           <div className="reveal">
@@ -28,22 +49,20 @@ export default function Clients({ lang }: { lang: Lang }) {
             {!hidden('clients', 'body') && <p className="text-cream-muted text-base leading-relaxed">{ov('clients', 'body', tr.clients.body)}</p>}
           </div>
           {/* Decorative stat */}
+          {clientStats.length > 0 && (
           <div className="reveal grid grid-cols-2 gap-4">
-            {list('clients_stats', [
-              { title: '500+', desc: lang === 'ar' ? 'عميل راضٍ' : 'Satisfied Clients', icon: null },
-              { title: '8+', desc: lang === 'ar' ? 'قطاعات خدمية' : 'Service Sectors', icon: null },
-              { title: '15+', desc: lang === 'ar' ? 'سنة خبرة' : 'Years Experience', icon: null },
-              { title: '100%', desc: lang === 'ar' ? 'سرية تامة' : 'Full Confidentiality', icon: null },
-            ]).map((s, i) => (
+            {clientStats.map((s, i) => (
               <div key={s.id ?? `${s.title}-${i}`} className="glass-card p-6 text-center">
                 <div className="text-3xl font-black text-gold-gradient mb-1">{s.title}</div>
                 <div className="text-xs text-cream-muted">{s.desc}</div>
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* Client sectors */}
+        {sectors.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {sectors.map((sector, i) => {
             const Icon = getIcon(sector.icon) ?? Users
@@ -61,6 +80,7 @@ export default function Clients({ lang }: { lang: Lang }) {
             )
           })}
         </div>
+        )}
 
       </div>
     </section>

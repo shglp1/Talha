@@ -3,6 +3,7 @@ import { getAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/admin-auth'
 import { LIST_SECTIONS, defaultListItems } from '@/lib/contentSchema'
 import { revalidatePublicSite } from '@/lib/revalidate-site'
+import { markListSectionManaged } from '@/lib/list-meta'
 
 /**
  * Imports the default card data into `content_items` for any section that is
@@ -46,6 +47,10 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase.from('content_items').insert(rows)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const seededSections = [...new Set(rows.map(r => r.section as string))]
+  await Promise.all(seededSections.map(section => markListSectionManaged(section)))
+
   revalidatePublicSite()
   return NextResponse.json({ success: true, inserted: rows.length })
 }
