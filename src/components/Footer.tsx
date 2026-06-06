@@ -7,6 +7,7 @@ import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
 import SectionExtras from '@/components/SectionExtras'
+import { cmsField } from '@/lib/cms-attrs'
 
 const DEFAULT_WHATSAPP_URL =
   'https://api.whatsapp.com/send/?phone=966148444555&text&type=phone_number&app_absent=0'
@@ -106,7 +107,7 @@ export default function Footer({ lang }: { lang: Lang }) {
             <BrandLogo variant="footer" className="h-14 sm:h-16 w-auto max-w-[200px] sm:max-w-[220px] object-contain" />
           </Link>
           {tagline && (
-            <p className="footer-tagline text-[11px] sm:text-xs leading-snug max-w-md mx-auto px-2 mt-0.5">
+            <p className="footer-tagline text-[11px] sm:text-xs leading-snug max-w-md mx-auto px-2 mt-0.5" {...cmsField('footer', 'tagline')}>
               {tagline}
             </p>
           )}
@@ -117,16 +118,18 @@ export default function Footer({ lang }: { lang: Lang }) {
             <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5 sm:gap-y-1.5 max-w-4xl mx-auto">
               {phone && (
                 <FooterRow icon={Phone} href={`tel:${phone.replace(/\s/g, '')}`}>
-                  <span dir="ltr" className="inline-block">{phone}</span>
+                  <span dir="ltr" className="inline-block" {...cmsField('footer', 'phone')}>{phone}</span>
                 </FooterRow>
               )}
               {email && (
                 <FooterRow icon={Mail} href={`mailto:${email}`}>
-                  {email}
+                  <span {...cmsField('footer', 'email')}>{email}</span>
                 </FooterRow>
               )}
               {address && (
-                <FooterRow icon={MapPin}>{address}</FooterRow>
+                <FooterRow icon={MapPin}>
+                  <span {...cmsField('footer', 'address')}>{address}</span>
+                </FooterRow>
               )}
               {hasSocial && (
                 <div className="flex items-center justify-center gap-1.5 sm:ms-1">
@@ -176,7 +179,9 @@ export default function Footer({ lang }: { lang: Lang }) {
         <div className="border-t border-obsidian-border/80">
           <div className="section-container py-1.5 sm:py-2">
             <p className="text-[10px] footer-muted opacity-75 text-center leading-tight">
-              © {year} {officeName} {rights && `${rights}.`}
+              © {year}{' '}
+              {officeName && <span {...cmsField('footer', 'officeName')}>{officeName}</span>}{' '}
+              {rights && <span {...cmsField('footer', 'rights')}>{rights}.</span>}
             </p>
           </div>
         </div>

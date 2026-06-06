@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Scale } from 'lucide-react'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
+import { cmsField } from '@/lib/cms-attrs'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -244,10 +245,10 @@ export default function Chatbot({ lang }: { lang: Lang }) {
             <Scale size={16} className="text-gold" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-cream">{ov('chat', 'title', tr.chat.title)}</p>
+            <p className="text-sm font-semibold text-cream" {...cmsField('chat', 'title')}>{ov('chat', 'title', tr.chat.title)}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-cream-muted">{ov('chat', 'subtitle', tr.chat.subtitle)}</span>
+              <span className="text-xs text-cream-muted" {...cmsField('chat', 'subtitle')}>{ov('chat', 'subtitle', tr.chat.subtitle)}</span>
             </div>
           </div>
           <button onClick={() => setOpen(false)} className="ms-auto text-cream-muted hover:text-cream p-1">
@@ -259,7 +260,10 @@ export default function Chatbot({ lang }: { lang: Lang }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0" style={{ maxHeight: 360 }}>
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? (lang === 'ar' ? 'justify-start' : 'justify-end') : (lang === 'ar' ? 'justify-end' : 'justify-start')}`}>
-              <div className={m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot'}>
+              <div
+                className={m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot'}
+                {...(m.role === 'assistant' && i === 0 ? cmsField('chat', 'welcome') : {})}
+              >
                 {m.role === 'assistant' ? renderMessage(m.content) : m.content}
               </div>
             </div>
@@ -286,6 +290,7 @@ export default function Chatbot({ lang }: { lang: Lang }) {
             placeholder={ov('chat', 'placeholder', tr.chat.placeholder)}
             className="form-input text-sm py-2.5 flex-1"
             disabled={loading}
+            {...cmsField('chat', 'placeholder')}
           />
           <button
             onClick={send}

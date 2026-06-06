@@ -19,6 +19,11 @@ import {
   HOMEPAGE_SECTIONS, serializeHomepageLayout, parseHomepageLayout, defaultHomepageLayout,
 } from '@/lib/contentSchema'
 import type { ListSection } from '@/lib/contentSchema'
+import FieldStyleControls from '@/components/admin/FieldStyleControls'
+import {
+  STYLE_KEY_SUFFIX, ITEM_STYLE_SECTION, parseFieldStyle, serializeFieldStyle, isEmptyStyle, buildAdminDbKeys,
+} from '@/lib/text-style'
+import type { FieldTextStyle } from '@/lib/text-style'
 
 type Tab = 'messages' | 'content' | 'lists' | 'layout' | 'partners' | 'photos'
 
@@ -28,7 +33,7 @@ const C = {
   gold: '#C4973A', goldDark: '#A27849', goldSoft: '#F6EFDE',
 }
 
-type ContentRow = { section: string; key: string; value_ar: string; value_en: string; hidden?: boolean }
+type ContentRow = { section: string; key: string; value_ar: string; value_en: string; hidden?: boolean; style?: FieldTextStyle }
 type CustomField = {
   section: string; key: string
   label_ar: string; label_en: string
@@ -97,6 +102,7 @@ export default function AdminDashboard() {
   const [photoSuccess, setPhotoSuccess] = useState('')
   const [homepageLayout, setHomepageLayout] = useState(defaultHomepageLayout())
   const [layoutStatus, setLayoutStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [itemStyles, setItemStyles] = useState<Record<string, FieldTextStyle>>({})
 
   // Centralized handling of API failures: 401/403 means the session is bad.
   const handleApiError = useCallback((err: unknown) => {
@@ -119,10 +125,18 @@ export default function AdminDashboard() {
       const en = row?.value_en && row.value_en.trim() ? row.value_en : f.def.en
       const visRow = map.get(`${f.section}.${f.key}__vis`)
       const isHidden = visRow?.value_ar === '0'
-      return { section: f.section, key: f.key, value_ar: ar, value_en: en, hidden: isHidden }
+      const styleRow = map.get(`${f.section}.${f.key}${STYLE_KEY_SUFFIX}`)
+      const style = parseFieldStyle(styleRow?.value_ar)
+      return { section: f.section, key: f.key, value_ar: ar, value_en: en, hidden: isHidden, style }
     })
     setContent(merged)
     setDbKeys(new Set(rows.filter(r => !r.is_custom).map(r => `${r.section}.${r.key}`)))
+    const nextItemStyles: Record<string, FieldTextStyle> = {}
+    rows.filter(r => r.section === ITEM_STYLE_SECTION).forEach(r => {
+      const parsed = parseFieldStyle(r.value_ar)
+      if (!isEmptyStyle(parsed)) nextItemStyles[r.key] = parsed
+    })
+    setItemStyles(nextItemStyles)
     // Load photo overrides
     const photos: Record<string, string> = {}
     let slides: string[] = []
@@ -432,6 +446,54 @@ export default function AdminDashboard() {
     ))
   }
 
+  const patchFieldStyle = (section: string, key: string, patch: Partial<FieldTextStyle>) => {
+    setContent(prev => prev.map(c => {
+      if (c.section !== section || c.key !== key) return c
+      const next: FieldTextStyle = { ...c.style }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === undefined || v === '') delete next[k as keyof FieldTextStyle]
+        else next[k as keyof FieldTextStyle] = v as string
+      }
+      return { ...c, style: isEmptyStyle(next) ? undefined : next }
+    }))
+  }
+
+  const patchItemStyle = (itemId: string, patch: Partial<FieldTextStyle>) => {
+    setItemStyles(prev => {
+      const next: FieldTextStyle = { ...prev[itemId] }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === undefined || v === '') delete next[k as keyof FieldTextStyle]
+        else next[k as keyof FieldTextStyle] = v as string
+      }
+      if (isEmptyStyle(next)) {
+        const copy = { ...prev }
+        delete copy[itemId]
+        return copy
+      }
+      return { ...prev, [itemId]: next }
+    })
+  }
+
+  const persistItemStyleToDb = async (itemId: string) => {
+    const st = itemStyles[itemId]
+    if (st && !isEmptyStyle(st)) {
+      await adminApi.saveContent([{
+        section: ITEM_STYLE_SECTION,
+        key: itemId,
+        value_ar: serializeFieldStyle(st),
+        value_en: serializeFieldStyle(st),
+      }])
+      setDbKeys(prev => new Set(prev).add(`${ITEM_STYLE_SECTION}.${itemId}`))
+    } else {
+      await adminApi.deleteContentField(ITEM_STYLE_SECTION, itemId)
+      setDbKeys(prev => {
+        const next = new Set(prev)
+        next.delete(`${ITEM_STYLE_SECTION}.${itemId}`)
+        return next
+      })
+    }
+  }
+
   const handleSaveContent = async () => {
     setSaveStatus('saving')
     setApiError('')
@@ -440,23 +502,55 @@ export default function AdminDashboard() {
         section: item.section, key: item.key,
         value_ar: item.value_ar, value_en: item.value_en,
       }))
-      // Only persist visibility when a field is explicitly hidden
       const visRows = content
         .filter(item => item.hidden)
         .map(item => ({
           section: item.section, key: item.key + '__vis',
           value_ar: '0', value_en: '0',
         }))
-      await adminApi.saveContent([...scalarRows, ...visRows])
+      const styleRows = content
+        .filter(item => item.style && !isEmptyStyle(item.style))
+        .map(item => ({
+          section: item.section,
+          key: item.key + STYLE_KEY_SUFFIX,
+          value_ar: serializeFieldStyle(item.style!),
+          value_en: serializeFieldStyle(item.style!),
+        }))
+      const itemStyleRows = Object.entries(itemStyles)
+        .filter(([, st]) => !isEmptyStyle(st))
+        .map(([id, st]) => ({
+          section: ITEM_STYLE_SECTION,
+          key: id,
+          value_ar: serializeFieldStyle(st),
+          value_en: serializeFieldStyle(st),
+        }))
+      await adminApi.saveContent([...scalarRows, ...visRows, ...styleRows, ...itemStyleRows])
       const toClearVis = content.filter(
         item => !item.hidden && dbKeys.has(`${item.section}.${item.key}__vis`),
       )
       await Promise.all(
         toClearVis.map(item => adminApi.deleteContentField(item.section, `${item.key}__vis`)),
       )
+      // Remove style rows when admin chose "افتراضي" (cleared color/size in UI)
+      await Promise.all(
+        content
+          .filter(item => isEmptyStyle(item.style))
+          .map(item => adminApi.deleteContentField(item.section, `${item.key}${STYLE_KEY_SUFFIX}`)),
+      )
+      const staleItemStyleIds = new Set<string>([
+        ...Object.keys(itemStyles),
+        ...[...dbKeys]
+          .filter(k => k.startsWith(`${ITEM_STYLE_SECTION}.`))
+          .map(k => k.slice(ITEM_STYLE_SECTION.length + 1)),
+      ])
+      await Promise.all(
+        [...staleItemStyleIds]
+          .filter(id => !itemStyles[id] || isEmptyStyle(itemStyles[id]))
+          .map(id => adminApi.deleteContentField(ITEM_STYLE_SECTION, id)),
+      )
       setLastSavedAt(new Date().toLocaleTimeString('ar-SA'))
       setSaveStatus('saved')
-      setDbKeys(new Set(content.map(c => `${c.section}.${c.key}`)))
+      setDbKeys(buildAdminDbKeys(content, itemStyles))
       setTimeout(() => setSaveStatus('idle'), 3000)
     } catch (err) {
       handleApiError(err)
@@ -567,6 +661,7 @@ export default function AdminDashboard() {
           desc_ar: item.desc_ar, desc_en: item.desc_en,
           icon: item.icon || null, active: item.active, sort_order: item.sort_order,
         })
+        await persistItemStyleToDb(item.id)
       }
       setPreviewSections(prev => {
         const next = new Set(prev)
@@ -622,6 +717,14 @@ export default function AdminDashboard() {
     if (!window.confirm('هل تريد حذف هذه البطاقة؟ لا يمكن التراجع إلا من النسخة الاحتياطية.')) return
     try {
       await adminApi.deleteItem(id)
+      if (dbKeys.has(`${ITEM_STYLE_SECTION}.${id}`)) {
+        await adminApi.deleteContentField(ITEM_STYLE_SECTION, id)
+      }
+      setItemStyles(prev => {
+        const next = { ...prev }
+        delete next[id]
+        return next
+      })
       await reloadItemsFromDb()
     } catch (err) {
       handleApiError(err)
@@ -1026,7 +1129,7 @@ export default function AdminDashboard() {
           {tab === 'content' && (
             <div>
               <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 16, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7, maxWidth: 920 }}>
-                النصوص والأرقام هنا مطابقة للموقع. الأقسام الفارغة تُعرض تلقائيًا كما على الموقع؛ زر <strong>«إضافة…»</strong> يحفظها ثم يضيف عناصر جديدة <strong>دون حذف</strong> القديمة. بعد الحفظ افتح «عرض الموقع» أو حدّث (F5).
+                النصوص والألوان وأحجام الخطوط هنا مطابقة للموقع. استخدم «تنسيق النص» أسفل كل حقل. بعد الحفظ افتح «عرض الموقع» أو حدّث (F5).
               </div>
 
               <div style={{ maxWidth: 920, marginBottom: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1141,6 +1244,13 @@ export default function AdminDashboard() {
                                     )}
                                   </div>
                                 </div>
+                                {!isHidden && (
+                                  <FieldStyleControls
+                                    style={item?.style}
+                                    onChange={patch => patchFieldStyle(field.section, field.key, patch)}
+                                    onReset={() => patchFieldStyle(field.section, field.key, { color: undefined, fontSize: undefined, descColor: undefined, descFontSize: undefined })}
+                                  />
+                                )}
                               </div>
                             )
                           })}
@@ -1178,6 +1288,8 @@ export default function AdminDashboard() {
                                 isPreview={previewSections.has(sec.section)}
                                 isMobile={isMobile}
                                 savingId={savingId}
+                                itemStyles={itemStyles}
+                                onPatchItemStyle={patchItemStyle}
                                 onAdd={() => addItem(sec.section)}
                                 onPatch={(id, f, v) => patchItem(sec.section, id, f, v)}
                                 onSave={(item, key) => saveItem(item, key)}
@@ -1239,6 +1351,8 @@ export default function AdminDashboard() {
                     isPreview={previewSections.has(sec.section)}
                     isMobile={isMobile}
                     savingId={savingId}
+                    itemStyles={itemStyles}
+                    onPatchItemStyle={patchItemStyle}
                     onAdd={() => addItem(sec.section)}
                     onPatch={(id, field, val) => patchItem(sec.section, id, field, val)}
                     onSave={(item, key) => saveItem(item, key)}
@@ -1685,13 +1799,15 @@ export default function AdminDashboard() {
 }
 
 function ListSectionEditor({
-  sec, rows, isPreview, isMobile, savingId, onAdd, onPatch, onSave, onToggleActive, onDelete, onMove,
+  sec, rows, isPreview, isMobile, savingId, itemStyles, onPatchItemStyle, onAdd, onPatch, onSave, onToggleActive, onDelete, onMove,
 }: {
   sec: ListSection
   rows: ContentItem[]
   isPreview: boolean
   isMobile: boolean
   savingId: string | null
+  itemStyles: Record<string, FieldTextStyle>
+  onPatchItemStyle: (itemId: string, patch: Partial<FieldTextStyle>) => void
   onAdd: () => void
   onPatch: (rowKey: string, field: keyof ContentItem, val: ContentItem[keyof ContentItem]) => void
   onSave: (item: ContentItem, rowKey: string) => void
@@ -1773,6 +1889,18 @@ function ListSectionEditor({
                   </div>
                 )}
               </div>
+
+              {item.id ? (
+                <FieldStyleControls
+                  compact
+                  showDesc={!!(sec.hasDesc || isStat)}
+                  style={itemStyles[item.id]}
+                  onChange={patch => onPatchItemStyle(item.id!, patch)}
+                  onReset={() => onPatchItemStyle(item.id!, { color: undefined, fontSize: undefined, descColor: undefined, descFontSize: undefined })}
+                />
+              ) : (
+                <p style={{ fontSize: 11, color: C.dim, margin: '10px 0 0' }}>احفظ البطاقة أولًا لتفعيل تنسيق اللون والحجم.</p>
+              )}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted, cursor: 'pointer' }}>

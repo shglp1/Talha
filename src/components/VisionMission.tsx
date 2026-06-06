@@ -5,6 +5,7 @@ import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
 import SectionExtras from '@/components/SectionExtras'
+import { cmsField } from '@/lib/cms-attrs'
 
 export default function VisionMission({ lang }: { lang: Lang }) {
   const tr = t[lang]
@@ -33,6 +34,7 @@ export default function VisionMission({ lang }: { lang: Lang }) {
           {!hidden('visionMission', 'badge') && <span
             className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold tracking-wide"
             style={{ border: '1px solid rgba(196,151,58,0.40)', background: 'rgba(196,151,58,0.12)', color: '#E2C485' }}
+            {...cmsField('visionMission', 'badge')}
           >
             {ov('visionMission', 'badge', tr.visionMission.badge)}
           </span>}
@@ -52,11 +54,11 @@ export default function VisionMission({ lang }: { lang: Lang }) {
                 <Telescope size={26} style={{ color: '#E2C485' }} />
               </div>
               <div>
-                {!hidden('visionMission', 'visionTitle') && <h3 className="text-2xl sm:text-3xl font-black leading-none" style={{ color: '#FFFFFF' }}>{ov('visionMission', 'visionTitle', tr.visionMission.visionTitle)}</h3>}
+                {!hidden('visionMission', 'visionTitle') && <h3 className="text-2xl sm:text-3xl font-black leading-none" style={{ color: '#FFFFFF' }} {...cmsField('visionMission', 'visionTitle')}>{ov('visionMission', 'visionTitle', tr.visionMission.visionTitle)}</h3>}
                 <div className="mt-2.5 h-[3px] w-12 rounded-full" style={{ background: 'linear-gradient(90deg, #C4973A, #E2C485)' }} />
               </div>
             </div>
-            {!hidden('visionMission', 'visionText') && <p className="text-[15px] sm:text-base leading-loose" style={{ color: 'rgba(245,239,222,0.86)' }}>{ov('visionMission', 'visionText', tr.visionMission.visionText)}</p>}
+            {!hidden('visionMission', 'visionText') && <p className="text-[15px] sm:text-base leading-loose" style={{ color: 'rgba(245,239,222,0.86)' }} {...cmsField('visionMission', 'visionText')}>{ov('visionMission', 'visionText', tr.visionMission.visionText)}</p>}
           </article>
 
           {/* Connecting hub */}
@@ -83,11 +85,11 @@ export default function VisionMission({ lang }: { lang: Lang }) {
                 <Compass size={26} style={{ color: '#E2C485' }} />
               </div>
               <div>
-                {!hidden('visionMission', 'missionTitle') && <h3 className="text-2xl sm:text-3xl font-black leading-none" style={{ color: '#FFFFFF' }}>{ov('visionMission', 'missionTitle', tr.visionMission.missionTitle)}</h3>}
+                {!hidden('visionMission', 'missionTitle') && <h3 className="text-2xl sm:text-3xl font-black leading-none" style={{ color: '#FFFFFF' }} {...cmsField('visionMission', 'missionTitle')}>{ov('visionMission', 'missionTitle', tr.visionMission.missionTitle)}</h3>}
                 <div className="mt-2.5 h-[3px] w-12 rounded-full" style={{ background: 'linear-gradient(90deg, #C4973A, #E2C485)' }} />
               </div>
             </div>
-            {!hidden('visionMission', 'missionText') && <p className="text-[15px] sm:text-base leading-loose" style={{ color: 'rgba(245,239,222,0.86)' }}>{ov('visionMission', 'missionText', tr.visionMission.missionText)}</p>}
+            {!hidden('visionMission', 'missionText') && <p className="text-[15px] sm:text-base leading-loose" style={{ color: 'rgba(245,239,222,0.86)' }} {...cmsField('visionMission', 'missionText')}>{ov('visionMission', 'missionText', tr.visionMission.missionText)}</p>}
           </article>
         </div>
 

@@ -5,6 +5,7 @@ import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
 import HeroCarousel from '@/components/HeroCarousel'
+import { cmsField, cmsItemPart } from '@/lib/cms-attrs'
 
 export default function Hero({ lang }: { lang: Lang }) {
   const tr = t[lang]
@@ -55,25 +56,25 @@ export default function Hero({ lang }: { lang: Lang }) {
       <div className="relative z-10 section-container flex flex-col items-center text-center pt-28 pb-20">
         {!hideBadge && (
           <div className="reveal visible mb-8" style={{ transitionDelay: '0.1s' }}>
-            <span className="section-badge">{ov('hero', 'badge', tr.hero.badge)}</span>
+            <span className="section-badge" {...cmsField('hero', 'badge')}>{ov('hero', 'badge', tr.hero.badge)}</span>
           </div>
         )}
 
         <div ref={titleRef} className="reveal mb-6 max-w-4xl" style={{ transitionDelay: '0.25s' }}>
           {isAr ? (
             <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-black" style={{ lineHeight: 1.32 }}>
-              {!hideTitle1 && <span className="block text-white">{title1}</span>}
+              {!hideTitle1 && <span className="block text-white" {...cmsField('hero', 'title1')}>{title1}</span>}
               {!hideTitle2 && (
-                <span className="block text-gold-gradient" style={{ lineHeight: 1.4, paddingBottom: '0.18em', letterSpacing: '0.01em', overflow: 'visible' }}>
+                <span className="block text-gold-gradient" {...cmsField('hero', 'title2')} style={{ lineHeight: 1.4, paddingBottom: '0.18em', letterSpacing: '0.01em', overflow: 'visible' }}>
                   {title2}
                 </span>
               )}
-              {!hideTitle3 && <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-1" style={{ lineHeight: 1.4 }}>{title3}</span>}
+              {!hideTitle3 && <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-1" {...cmsField('hero', 'title3')} style={{ lineHeight: 1.4 }}>{title3}</span>}
             </h1>
           ) : (
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-tight font-english">
-              {!hideTitle1 && <span className="block text-gold-gradient" style={{ lineHeight: 1.3, paddingBottom: '0.12em' }}>{title1}</span>}
-              {!hideTitle3 && <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-2">{title3}</span>}
+              {!hideTitle1 && <span className="block text-gold-gradient" {...cmsField('hero', 'title1')} style={{ lineHeight: 1.3, paddingBottom: '0.12em' }}>{title1}</span>}
+              {!hideTitle3 && <span className="block text-white text-3xl sm:text-4xl lg:text-5xl font-bold mt-2" {...cmsField('hero', 'title3')}>{title3}</span>}
             </h1>
           )}
         </div>
@@ -81,7 +82,7 @@ export default function Hero({ lang }: { lang: Lang }) {
         {!hideSubtitle && <div className="reveal visible gold-divider mb-6" style={{ transitionDelay: '0.4s' }} />}
 
         {!hideSubtitle && (
-          <p className="reveal visible text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 font-semibold text-white/90" style={{ transitionDelay: '0.5s' }}>
+          <p className="reveal visible text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 font-semibold text-white/90" {...cmsField('hero', 'subtitle')} style={{ transitionDelay: '0.5s' }}>
             {subtitle}
           </p>
         )}
@@ -89,13 +90,13 @@ export default function Hero({ lang }: { lang: Lang }) {
         {(!hideCta1 || !hideCta2) && (
           <div className="reveal visible flex flex-wrap items-center justify-center gap-4 mb-16" style={{ transitionDelay: '0.65s' }}>
             {!hideCta1 && (
-              <a href="#contact" className="btn-gold gap-2">
+              <a href="#contact" className="btn-gold gap-2" {...cmsField('hero', 'cta1')}>
                 {ov('hero', 'cta1', tr.hero.cta1)}
                 <Arrow size={18} />
               </a>
             )}
             {!hideCta2 && (
-              <a href="#about" className="btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }}>
+              <a href="#about" className="btn-outline" {...cmsField('hero', 'cta2')} style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }}>
                 {ov('hero', 'cta2', tr.hero.cta2)}
               </a>
             )}
@@ -115,8 +116,8 @@ export default function Hero({ lang }: { lang: Lang }) {
               key={s.id ?? `${s.title}-${i}`}
               className={`text-center ${i < stats.length - 1 ? (isAr ? 'border-l border-obsidian-border' : 'border-r border-obsidian-border') : ''}`}
             >
-              <div className="text-3xl sm:text-4xl font-black text-gold-gradient leading-none mb-1">{s.title}</div>
-              <div className="text-xs sm:text-sm text-white/70">{s.desc}</div>
+              <div className="text-3xl sm:text-4xl font-black text-gold-gradient leading-none mb-1" {...cmsItemPart(s.id, 'title')}>{s.title}</div>
+              <div className="text-xs sm:text-sm text-white/70" {...cmsItemPart(s.id, 'desc')}>{s.desc}</div>
             </div>
           ))}
         </div>

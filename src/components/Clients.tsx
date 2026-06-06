@@ -6,6 +6,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
 import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
+import { cmsField, cmsItemPart } from '@/lib/cms-attrs'
 
 export default function Clients({ lang }: { lang: Lang }) {
   const tr = t[lang]
@@ -43,18 +44,18 @@ export default function Clients({ lang }: { lang: Lang }) {
         {/* Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           <div className="reveal">
-            {!hidden('clients', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('clients', 'badge', tr.clients.badge)}</span>}
-            {!hidden('clients', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('clients', 'title', tr.clients.title)}</h2>}
+            {!hidden('clients', 'badge') && <span className="section-badge mb-6 inline-flex" {...cmsField('clients', 'badge')}>{ov('clients', 'badge', tr.clients.badge)}</span>}
+            {!hidden('clients', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4" {...cmsField('clients', 'title')}>{ov('clients', 'title', tr.clients.title)}</h2>}
             <div className="gold-divider-start mb-6" />
-            {!hidden('clients', 'body') && <p className="text-cream-muted text-base leading-relaxed">{ov('clients', 'body', tr.clients.body)}</p>}
+            {!hidden('clients', 'body') && <p className="text-cream-muted text-base leading-relaxed" {...cmsField('clients', 'body')}>{ov('clients', 'body', tr.clients.body)}</p>}
           </div>
           {/* Decorative stat */}
           {clientStats.length > 0 && (
           <div className="reveal grid grid-cols-2 gap-4">
             {clientStats.map((s, i) => (
               <div key={s.id ?? `${s.title}-${i}`} className="glass-card p-6 text-center">
-                <div className="text-3xl font-black text-gold-gradient mb-1">{s.title}</div>
-                <div className="text-xs text-cream-muted">{s.desc}</div>
+                <div className="text-3xl font-black text-gold-gradient mb-1" {...cmsItemPart(s.id, 'title')}>{s.title}</div>
+                <div className="text-xs text-cream-muted" {...cmsItemPart(s.id, 'desc')}>{s.desc}</div>
               </div>
             ))}
           </div>
@@ -75,7 +76,7 @@ export default function Clients({ lang }: { lang: Lang }) {
                 <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 group-hover:border-gold/40 transition-all">
                   <Icon size={20} className="text-gold" />
                 </div>
-                <p className="text-sm font-medium text-cream-muted group-hover:text-cream transition-colors">{sector.title}</p>
+                <p className="text-sm font-medium text-cream-muted group-hover:text-cream transition-colors" {...cmsItemPart(sector.id, 'title')}>{sector.title}</p>
               </div>
             )
           })}

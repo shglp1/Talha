@@ -6,6 +6,7 @@ import { t } from '@/lib/translations'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
 import SectionExtras from '@/components/SectionExtras'
+import { cmsField } from '@/lib/cms-attrs'
 
 type FormState = { name: string; phone: string; email: string; message: string }
 type Status = 'idle' | 'sending' | 'success' | 'error'
@@ -68,10 +69,10 @@ export default function Contact({ lang }: { lang: Lang }) {
       <div className="section-container">
         {/* Header */}
         <div className="text-center mb-16 reveal">
-          {!hidden('contact', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('contact', 'badge', tr.contact.badge)}</span>}
-          {!hidden('contact', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('contact', 'title', tr.contact.title)}</h2>}
+          {!hidden('contact', 'badge') && <span className="section-badge mb-6 inline-flex" {...cmsField('contact', 'badge')}>{ov('contact', 'badge', tr.contact.badge)}</span>}
+          {!hidden('contact', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4" {...cmsField('contact', 'title')}>{ov('contact', 'title', tr.contact.title)}</h2>}
           <div className="gold-divider mb-6" />
-          {!hidden('contact', 'subtitle') && <p className="text-cream-muted text-lg max-w-xl mx-auto">{ov('contact', 'subtitle', tr.contact.subtitle)}</p>}
+          {!hidden('contact', 'subtitle') && <p className="text-cream-muted text-lg max-w-xl mx-auto" {...cmsField('contact', 'subtitle')}>{ov('contact', 'subtitle', tr.contact.subtitle)}</p>}
           <SectionExtras section="contact" />
         </div>
 
@@ -91,6 +92,7 @@ export default function Contact({ lang }: { lang: Lang }) {
                         href={href}
                         className="text-sm text-cream-muted hover:text-gold transition-colors"
                         dir="ltr"
+                        {...cmsField('hero', key)}
                       >
                         {label}
                       </a>
@@ -107,11 +109,11 @@ export default function Contact({ lang }: { lang: Lang }) {
                       </a>
                     </div>
                   ) : href ? (
-                    <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer" className="text-sm text-cream-muted hover:text-gold transition-colors" dir={Icon === Mail ? 'ltr' : undefined}>
+                    <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer" className="text-sm text-cream-muted hover:text-gold transition-colors" dir={Icon === Mail ? 'ltr' : undefined} {...cmsField('hero', key)}>
                       {label}
                     </a>
                   ) : (
-                    <span className="text-sm text-cream-muted">{label}</span>
+                    <span className="text-sm text-cream-muted" {...cmsField('hero', key)}>{label}</span>
                   )}
                 </div>
               ))}
@@ -147,7 +149,7 @@ export default function Contact({ lang }: { lang: Lang }) {
             <form onSubmit={handleSubmit} className="glass-card p-8 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-cream-muted mb-2">
+                  <label className="block text-sm font-medium text-cream-muted mb-2" {...cmsField('contact', 'namePlaceholder')}>
                     {namePh}
                   </label>
                   <input
@@ -160,7 +162,7 @@ export default function Contact({ lang }: { lang: Lang }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-cream-muted mb-2">
+                  <label className="block text-sm font-medium text-cream-muted mb-2" {...cmsField('contact', 'phonePlaceholder')}>
                     {phonePh}
                   </label>
                   <input
@@ -176,7 +178,7 @@ export default function Contact({ lang }: { lang: Lang }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-cream-muted mb-2">
+                <label className="block text-sm font-medium text-cream-muted mb-2" {...cmsField('contact', 'emailPlaceholder')}>
                   {emailPh}
                 </label>
                 <input
@@ -191,7 +193,7 @@ export default function Contact({ lang }: { lang: Lang }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-cream-muted mb-2">
+                <label className="block text-sm font-medium text-cream-muted mb-2" {...cmsField('contact', 'messagePlaceholder')}>
                   {messagePh}
                 </label>
                 <textarea
@@ -207,13 +209,13 @@ export default function Contact({ lang }: { lang: Lang }) {
 
               {/* Status messages */}
               {status === 'success' && (
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 text-sm">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 text-sm" {...cmsField('contact', 'success')}>
                   <CheckCircle2 size={18} />
                   {ov('contact', 'success', tr.contact.success)}
                 </div>
               )}
               {status === 'error' && (
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-700 text-sm">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-700 text-sm" {...cmsField('contact', 'error')}>
                   <AlertCircle size={18} />
                   {ov('contact', 'error', tr.contact.error)}
                 </div>
@@ -225,11 +227,11 @@ export default function Contact({ lang }: { lang: Lang }) {
                 className="btn-gold w-full justify-center disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {status === 'sending' ? (
-                  ov('contact', 'sending', tr.contact.sending)
+                  <span {...cmsField('contact', 'sending')}>{ov('contact', 'sending', tr.contact.sending)}</span>
                 ) : (
                   <>
                     <Send size={18} />
-                    {ov('contact', 'send', tr.contact.send)}
+                    <span {...cmsField('contact', 'send')}>{ov('contact', 'send', tr.contact.send)}</span>
                   </>
                 )}
               </button>

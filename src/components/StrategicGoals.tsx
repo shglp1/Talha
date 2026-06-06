@@ -8,6 +8,7 @@ import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
 import SectionExtras from '@/components/SectionExtras'
 import { defaultListItems } from '@/lib/contentSchema'
+import { cmsField, cmsItemPart } from '@/lib/cms-attrs'
 
 const GOAL_ICONS = ['Award', 'UserCheck', 'Lightbulb', 'TrendingUp', 'BookOpen', 'Brain', 'Gem']
 
@@ -43,10 +44,10 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
       <div className="relative z-10 section-container">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16 reveal">
-          <span className="section-badge mb-6 inline-flex">{ov('goals', 'badge', tr.goals.badge)}</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('goals', 'title', tr.goals.title)}</h2>
+          <span className="section-badge mb-6 inline-flex" {...cmsField('goals', 'badge')}>{ov('goals', 'badge', tr.goals.badge)}</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4" {...cmsField('goals', 'title')}>{ov('goals', 'title', tr.goals.title)}</h2>
           <div className="gold-divider mb-6" />
-          <p className="text-cream-muted text-base sm:text-lg max-w-2xl mx-auto">{ov('goals', 'subtitle', tr.goals.subtitle)}</p>
+          <p className="text-cream-muted text-base sm:text-lg max-w-2xl mx-auto" {...cmsField('goals', 'subtitle')}>{ov('goals', 'subtitle', tr.goals.subtitle)}</p>
         </div>
 
         {/* Goals grid */}
@@ -68,8 +69,8 @@ export default function StrategicGoals({ lang }: { lang: Lang }) {
                 <div className="w-12 h-12 rounded-xl bg-gold-soft border border-gold/25 flex items-center justify-center mb-5 group-hover:bg-gold group-hover:border-gold transition-colors duration-300">
                   <Icon size={22} className="text-gold-dark group-hover:text-white transition-colors duration-300" />
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-cream mb-2">{goal.title}</h3>
-                <p className="text-sm text-cream-muted leading-relaxed">{goal.desc}</p>
+                <h3 className="text-base sm:text-lg font-bold text-cream mb-2" {...cmsItemPart(goal.id, 'title')}>{goal.title}</h3>
+                <p className="text-sm text-cream-muted leading-relaxed" {...cmsItemPart(goal.id, 'desc')}>{goal.desc}</p>
               </article>
             )
           })}

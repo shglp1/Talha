@@ -1,6 +1,7 @@
 'use client'
 import { useContent } from '@/components/ContentProvider'
 import { normalizeUrl } from '@/lib/url'
+import { cmsField } from '@/lib/cms-attrs'
 
 /**
  * Renders admin-defined custom fields for a section in fixed, theme-consistent
@@ -25,21 +26,21 @@ export default function SectionExtras({
       {fields.map(f => {
         if (f.slot === 'badge') {
           return (
-            <span key={f.key} className="section-badge inline-flex">
+            <span key={f.key} className="section-badge inline-flex" {...cmsField(section, f.key)}>
               {f.value}
             </span>
           )
         }
         if (f.slot === 'title') {
           return (
-            <h3 key={f.key} className={`text-2xl sm:text-3xl font-black text-cream ${alignClass}`}>
+            <h3 key={f.key} className={`text-2xl sm:text-3xl font-black text-cream ${alignClass}`} {...cmsField(section, f.key)}>
               {f.value}
             </h3>
           )
         }
         if (f.slot === 'subtitle') {
           return (
-            <p key={f.key} className={`text-cream-muted text-base sm:text-lg max-w-2xl ${alignClass}`}>
+            <p key={f.key} className={`text-cream-muted text-base sm:text-lg max-w-2xl ${alignClass}`} {...cmsField(section, f.key)}>
               {f.value}
             </p>
           )
@@ -53,6 +54,7 @@ export default function SectionExtras({
               target="_blank"
               rel="noopener noreferrer"
               className="btn-gold inline-flex"
+              {...cmsField(section, f.key)}
             >
               {f.value}
             </a>
@@ -60,7 +62,7 @@ export default function SectionExtras({
         }
         // default: body
         return (
-          <p key={f.key} className={`text-cream-muted text-[15px] sm:text-base leading-loose max-w-2xl ${alignClass}`}>
+          <p key={f.key} className={`text-cream-muted text-[15px] sm:text-base leading-loose max-w-2xl ${alignClass}`} {...cmsField(section, f.key)}>
             {f.value}
           </p>
         )

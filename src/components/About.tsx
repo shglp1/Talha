@@ -6,6 +6,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
 import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
+import { cmsField, cmsItemPart } from '@/lib/cms-attrs'
 
 const DEFAULT_PILLARS = {
   ar: [
@@ -60,8 +61,8 @@ export default function About({ lang }: { lang: Lang }) {
               </div>
 
               <div className={`absolute -bottom-5 ${isAr ? '-left-4 sm:-left-6' : '-right-4 sm:-right-6'} bg-white border border-obsidian-border rounded-2xl px-5 py-4 shadow-2xl max-w-[190px]`}>
-                <div className="text-4xl font-black text-gold-gradient leading-none" style={{ paddingBottom: '0.08em' }}>{yearsValue}</div>
-                <div className="text-xs text-cream-muted mt-1.5 leading-snug">{yearsCaption}</div>
+                <div className="text-4xl font-black text-gold-gradient leading-none" {...cmsField('about', 'years_value')} style={{ paddingBottom: '0.08em' }}>{yearsValue}</div>
+                <div className="text-xs text-cream-muted mt-1.5 leading-snug" {...cmsField('about', 'years_caption')}>{yearsCaption}</div>
               </div>
 
               <div className={`absolute -top-3 ${isAr ? '-right-3' : '-left-3'} w-16 h-16 border-t-2 border-gold ${isAr ? 'border-r-2' : 'border-l-2'}`} />
@@ -69,16 +70,16 @@ export default function About({ lang }: { lang: Lang }) {
           </div>
 
           <div className={`reveal ${isAr ? 'reveal-left order-last' : 'reveal-right'}`}>
-            {!hidden('about', 'badge') && <span className="section-badge mb-5 inline-flex">{ov('about', 'badge', tr.about.badge)}</span>}
-            {!hidden('about', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-tight">
+            {!hidden('about', 'badge') && <span className="section-badge mb-5 inline-flex" {...cmsField('about', 'badge')}>{ov('about', 'badge', tr.about.badge)}</span>}
+            {!hidden('about', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-tight" {...cmsField('about', 'title')}>
               {ov('about', 'title', tr.about.title)}
             </h2>}
             <div className="gold-divider-start mb-7" />
 
             <div className="space-y-4 text-cream-muted text-[15px] sm:text-base leading-loose mb-8" style={{ textAlign: 'justify' }}>
-              {!hidden('about', 'body1') && <p>{ov('about', 'body1', tr.about.body1)}</p>}
-              {!hidden('about', 'body2') && <p>{ov('about', 'body2', tr.about.body2)}</p>}
-              {!hidden('about', 'body3') && <p>{ov('about', 'body3', tr.about.body3)}</p>}
+              {!hidden('about', 'body1') && <p {...cmsField('about', 'body1')}>{ov('about', 'body1', tr.about.body1)}</p>}
+              {!hidden('about', 'body2') && <p {...cmsField('about', 'body2')}>{ov('about', 'body2', tr.about.body2)}</p>}
+              {!hidden('about', 'body3') && <p {...cmsField('about', 'body3')}>{ov('about', 'body3', tr.about.body3)}</p>}
             </div>
 
             {pillars.length > 0 && (
@@ -90,7 +91,7 @@ export default function About({ lang }: { lang: Lang }) {
                     <span className="w-9 h-9 rounded-lg bg-white border border-gold/25 flex items-center justify-center flex-shrink-0">
                       <Icon size={18} className="text-gold-dark" />
                     </span>
-                    <span className="text-sm font-semibold text-cream leading-tight">{p.title}</span>
+                    <span className="text-sm font-semibold text-cream leading-tight" {...cmsItemPart(p.id, 'title')}>{p.title}</span>
                   </div>
                 )
               })}

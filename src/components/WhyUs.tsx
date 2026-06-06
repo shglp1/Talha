@@ -6,6 +6,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
 import { getIcon } from '@/lib/iconMap'
 import SectionExtras from '@/components/SectionExtras'
+import { cmsField, cmsItemPart } from '@/lib/cms-attrs'
 
 export default function WhyUs({ lang }: { lang: Lang }) {
   const tr = t[lang]
@@ -22,10 +23,10 @@ export default function WhyUs({ lang }: { lang: Lang }) {
       <div className="section-container">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16 reveal">
-          {!hidden('whyUs', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('whyUs', 'badge', tr.whyUs.badge)}</span>}
-          {!hidden('whyUs', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('whyUs', 'title', tr.whyUs.title)}</h2>}
+          {!hidden('whyUs', 'badge') && <span className="section-badge mb-6 inline-flex" {...cmsField('whyUs', 'badge')}>{ov('whyUs', 'badge', tr.whyUs.badge)}</span>}
+          {!hidden('whyUs', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4" {...cmsField('whyUs', 'title')}>{ov('whyUs', 'title', tr.whyUs.title)}</h2>}
           <div className="gold-divider mb-6" />
-          {!hidden('whyUs', 'subtitle') && <p className="text-cream-muted text-base sm:text-lg max-w-2xl mx-auto">{ov('whyUs', 'subtitle', tr.whyUs.subtitle)}</p>}
+          {!hidden('whyUs', 'subtitle') && <p className="text-cream-muted text-base sm:text-lg max-w-2xl mx-auto" {...cmsField('whyUs', 'subtitle')}>{ov('whyUs', 'subtitle', tr.whyUs.subtitle)}</p>}
         </div>
 
         {/* Pillars grid */}
@@ -50,9 +51,9 @@ export default function WhyUs({ lang }: { lang: Lang }) {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-black text-gold/50 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
-                      <h3 className="text-base sm:text-lg font-bold text-cream">{item.title}</h3>
+                      <h3 className="text-base sm:text-lg font-bold text-cream" {...cmsItemPart(item.id, 'title')}>{item.title}</h3>
                     </div>
-                    <p className="text-cream-muted text-sm leading-relaxed">{item.desc}</p>
+                    <p className="text-cream-muted text-sm leading-relaxed" {...cmsItemPart(item.id, 'desc')}>{item.desc}</p>
                   </div>
                 </div>
               </article>

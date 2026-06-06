@@ -5,6 +5,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
 import SitePhoto from '@/components/SitePhoto'
 import SectionExtras from '@/components/SectionExtras'
+import { cmsField } from '@/lib/cms-attrs'
 
 export default function ClosingStatement({ lang }: { lang: Lang }) {
   const tr = t[lang]
@@ -47,7 +48,7 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
             {lang === 'ar' ? '،،' : '"'}
           </div>
 
-          <blockquote className="text-lg sm:text-xl lg:text-2xl text-cream leading-relaxed font-medium mb-8">
+          <blockquote className="text-lg sm:text-xl lg:text-2xl text-cream leading-relaxed font-medium mb-8" {...cmsField('closing', 'quote')}>
             {ov('closing', 'quote', tr.closing.quote)}
           </blockquote>
 
@@ -75,10 +76,11 @@ export default function ClosingStatement({ lang }: { lang: Lang }) {
               <p
                 className="font-display text-chatbot-gold font-bold text-xl sm:text-2xl tracking-wide"
                 style={{ lineHeight: 1.45, paddingBottom: '0.12em' }}
+                {...cmsField('closing', 'author')}
               >
                 {ov('closing', 'author', tr.closing.author)}
               </p>
-              <p className="text-cream-muted text-sm mt-1.5">{ov('closing', 'role', tr.closing.role)}</p>
+              <p className="text-cream-muted text-sm mt-1.5" {...cmsField('closing', 'role')}>{ov('closing', 'role', tr.closing.role)}</p>
             </div>
           </div>
 

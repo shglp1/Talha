@@ -6,6 +6,7 @@ import BrandLogo from '@/components/BrandLogo'
 import type { Lang } from '@/lib/translations'
 import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
+import { cmsField } from '@/lib/cms-attrs'
 
 const SCROLL_THRESHOLD = 48
 
@@ -73,6 +74,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
                 href={l.href}
                 className={linkClass}
                 onClick={() => setMenuOpen(false)}
+                {...cmsField('nav', l.key)}
               >
                 {l.label}
               </a>
@@ -83,7 +85,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
             <Link href={`/${otherLang}`} className={langClass}>
               {tr.nav.en}
             </Link>
-            <a href="#contact" className="btn-gold text-sm py-2.5 px-6" style={{ color: '#1A160F' }}>
+            <a href="#contact" className="btn-gold text-sm py-2.5 px-6" style={{ color: '#1A160F' }} {...cmsField('nav', 'contact')}>
               {ov('nav', 'contact', tr.nav.contact)}
             </a>
           </div>
@@ -107,6 +109,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
                 href={l.href}
                 className="px-4 py-3 text-base font-medium rounded-lg transition-colors duration-200 text-cream-muted hover:text-gold hover:bg-gold/10"
                 onClick={() => setMenuOpen(false)}
+                {...cmsField('nav', l.key)}
               >
                 {l.label}
               </a>
@@ -124,6 +127,7 @@ export default function Navbar({ lang }: { lang: Lang }) {
                 className="flex-1 btn-gold text-sm py-2.5 justify-center"
                 style={{ color: '#1A160F' }}
                 onClick={() => setMenuOpen(false)}
+                {...cmsField('nav', 'contact')}
               >
                 {ov('nav', 'contact', tr.nav.contact)}
               </a>

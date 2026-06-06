@@ -4,6 +4,7 @@ import type { SiteContent, ContentItem, Partner } from '@/lib/supabase'
 import { defaultListItems, parseHomepageLayout } from '@/lib/contentSchema'
 import type { PublicContentPayload } from '@/lib/content-server'
 import type { Lang } from '@/lib/translations'
+import CmsStyleSheet from '@/components/CmsStyleSheet'
 
 /**
  * Loads all CMS data from /api/content (server + service role) so the public
@@ -214,6 +215,7 @@ export function ContentProvider({
 
   return (
     <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, heroCarousel, enabled, hidden, list, extras, partners, partnersSeeded, sectionLayout }}>
+      <CmsStyleSheet rows={Object.values(scalars)} />
       {children}
     </ContentContext.Provider>
   )

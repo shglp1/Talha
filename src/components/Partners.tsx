@@ -5,6 +5,7 @@ import { t } from '@/lib/translations'
 import { getIcon } from '@/lib/iconMap'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useContent } from '@/components/ContentProvider'
+import { cmsField } from '@/lib/cms-attrs'
 
 // Shown until an admin adds real partner logos. Generic, professional wordmarks.
 const DEFAULT_PARTNERS: { ar: string; en: string }[] = [
@@ -84,10 +85,10 @@ export default function Partners({ lang }: { lang: Lang }) {
     <section id="partners" className="section-padding bg-obsidian overflow-hidden" dir={tr.dir}>
       <div className="section-container">
         <div className="text-center mb-12 reveal">
-          <span className="section-badge mb-6 inline-flex">{ov('partners', 'badge', tr.partners.badge)}</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">{ov('partners', 'title', tr.partners.title)}</h2>
+          <span className="section-badge mb-6 inline-flex" {...cmsField('partners', 'badge')}>{ov('partners', 'badge', tr.partners.badge)}</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4" {...cmsField('partners', 'title')}>{ov('partners', 'title', tr.partners.title)}</h2>
           <div className="gold-divider mb-6" />
-          <p className="text-cream-muted text-base sm:text-lg max-w-xl mx-auto">{ov('partners', 'subtitle', tr.partners.subtitle)}</p>
+          <p className="text-cream-muted text-base sm:text-lg max-w-xl mx-auto" {...cmsField('partners', 'subtitle')}>{ov('partners', 'subtitle', tr.partners.subtitle)}</p>
         </div>
       </div>
 

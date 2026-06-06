@@ -7,6 +7,7 @@ import { useContent } from '@/components/ContentProvider'
 import SitePhoto from '@/components/SitePhoto'
 import { getIcon } from '@/lib/iconMap'
 import SectionExtras from '@/components/SectionExtras'
+import { cmsField, cmsItemPart } from '@/lib/cms-attrs'
 
 // Fallback icon names matching each default specialization, in order.
 const SPEC_ICON_NAMES = ['Building2', 'Landmark', 'Scroll', 'Users', 'Gavel', 'TrendingUp']
@@ -31,15 +32,15 @@ export default function Team({ lang }: { lang: Lang }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Text side */}
           <div className={`reveal ${isAr ? 'reveal-left' : 'reveal-right'}`}>
-            {!hidden('team', 'badge') && <span className="section-badge mb-6 inline-flex">{ov('team', 'badge', tr.team.badge)}</span>}
-            {!hidden('team', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 leading-tight">{ov('team', 'title', tr.team.title)}</h2>}
+            {!hidden('team', 'badge') && <span className="section-badge mb-6 inline-flex" {...cmsField('team', 'badge')}>{ov('team', 'badge', tr.team.badge)}</span>}
+            {!hidden('team', 'title') && <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 leading-tight" {...cmsField('team', 'title')}>{ov('team', 'title', tr.team.title)}</h2>}
             <div className="gold-divider-start mb-7" />
-            {!hidden('team', 'body') && <p className="text-cream-muted text-base leading-relaxed mb-8" style={{ textAlign: 'justify' }}>{ov('team', 'body', tr.team.body)}</p>}
+            {!hidden('team', 'body') && <p className="text-cream-muted text-base leading-relaxed mb-8" style={{ textAlign: 'justify' }} {...cmsField('team', 'body')}>{ov('team', 'body', tr.team.body)}</p>}
 
             {/* Specializations */}
             {specializations.length > 0 && !hidden('team', 'specTitle') && (
               <>
-                <h4 className="text-cream font-bold mb-4 text-sm tracking-wider flex items-center gap-2">
+                <h4 className="text-cream font-bold mb-4 text-sm tracking-wider flex items-center gap-2" {...cmsField('team', 'specTitle')}>
                   <span className="w-6 h-px bg-gold" />
                   {ov('team', 'specTitle', isAr ? 'مجالات تخصصنا' : 'Our Specializations')}
                 </h4>
@@ -51,7 +52,7 @@ export default function Team({ lang }: { lang: Lang }) {
                         <span className="w-9 h-9 rounded-lg bg-gold-soft border border-gold/25 flex items-center justify-center flex-shrink-0 group-hover:bg-gold transition-colors">
                           <Icon size={17} className="text-gold-dark group-hover:text-white transition-colors" />
                         </span>
-                        <span className="text-sm font-medium text-cream">{s.title}</span>
+                        <span className="text-sm font-medium text-cream" {...cmsItemPart(s.id, 'title')}>{s.title}</span>
                       </div>
                     )
                   })}
