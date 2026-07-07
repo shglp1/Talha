@@ -31,16 +31,21 @@ const SECTION_COMPONENTS: Record<string, ComponentType<{ lang: Lang }>> = {
 export default function HomeSections({ lang }: { lang: Lang }) {
   const { sectionLayout } = useContent()
   const layout = sectionLayout()
+    .filter(s => s.visible)
+    .sort((a, b) => a.order - b.order)
+
+  const heroFirst = [
+    ...layout.filter(s => s.id === 'hero'),
+    ...layout.filter(s => s.id !== 'hero'),
+  ]
 
   return (
     <>
-      {layout
-        .filter(s => s.visible)
-        .map(s => {
-          const Component = SECTION_COMPONENTS[s.id]
-          if (!Component) return null
-          return <Component key={s.id} lang={lang} />
-        })}
+      {heroFirst.map(s => {
+        const Component = SECTION_COMPONENTS[s.id]
+        if (!Component) return null
+        return <Component key={s.id} lang={lang} />
+      })}
     </>
   )
 }

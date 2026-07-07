@@ -6,6 +6,7 @@ import Chatbot from '@/components/Chatbot'
 import { ContentProvider } from '@/components/ContentProvider'
 import LangSync from '@/components/LangSync'
 import { getPublicContent } from '@/lib/content-server'
+import { getSeoMetadata } from '@/lib/seo-metadata'
 import type { Lang } from '@/lib/translations'
 
 const validLangs: Lang[] = ['ar', 'en']
@@ -21,19 +22,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang: rawLang } = await params
   const lang = rawLang as Lang
-
-  if (lang === 'ar') {
-    return {
-      title: 'مكتب د. طلحة غوث للمحاماة والاستشارات القانونية | المدينة المنورة',
-      description: 'مكتب قانوني متخصص في المدينة المنورة يقدم استشارات وخدمات قانونية متكاملة للأعمال والأفراد والأوقاف والتركات. خبرة أكثر من 15 عاماً في القانون السعودي.',
-      alternates: { canonical: '/ar', languages: { 'en': '/en' } },
-    }
-  }
-  return {
-    title: 'Dr. Talha Ghawth Law Office | Madinah, Saudi Arabia',
-    description: 'Specialized law office in Madinah providing comprehensive legal services for businesses, individuals, endowments and estates. Over 15 years of Saudi law expertise.',
-    alternates: { canonical: '/en', languages: { 'ar': '/ar' } },
-  }
+  if (!validLangs.includes(lang)) return {}
+  return getSeoMetadata(lang)
 }
 
 export default async function LangLayout({

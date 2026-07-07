@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { ContactMessage, SiteContent, Partner, ContentItem } from '@/lib/supabase'
-import { adminApi, AdminApiError } from '@/lib/adminApi'
+import { adminApi, AdminApiError, getFreshAuthHeader } from '@/lib/adminApi'
 import IconPicker from '@/components/IconPicker'
 import { getIcon } from '@/lib/iconMap'
 import {
@@ -28,7 +28,22 @@ import {
 import { FOOTER_BADGE_PHOTO_KEYS } from '@/lib/site-links'
 import type { FieldTextStyle } from '@/lib/text-style'
 
-type Tab = 'messages' | 'content' | 'lists' | 'layout' | 'partners' | 'photos'
+const STRING_STYLE_KEYS = ['color', 'fontSize', 'descColor', 'descFontSize'] as const
+
+function applyFieldTextStylePatch(target: FieldTextStyle, patch: Partial<FieldTextStyle>) {
+  for (const [k, v] of Object.entries(patch)) {
+    if (k === 'hideDesc') {
+      if (v === true) target.hideDesc = true
+      else delete target.hideDesc
+      continue
+    }
+    if (!(STRING_STYLE_KEYS as readonly string[]).includes(k)) continue
+    if (v === undefined || v === '') delete target[k as typeof STRING_STYLE_KEYS[number]]
+    else target[k as typeof STRING_STYLE_KEYS[number]] = v as string
+  }
+}
+
+type Tab = 'messages' | 'content' | 'lists' | 'layout' | 'partners' | 'photos' | 'seo'
 
 const C = {
   bg: '#F8F5EF', panel: '#FFFFFF', soft: '#FBF9F4', border: '#ECE6DA',
@@ -67,6 +82,7 @@ const GROUP_HELP: Record<string, string> = {
   contact: 'حقول ونصوص نموذج التواصل.',
   footer: 'رقم الهاتف، البريد، زر خرائط جوجل، واتساب، والجملة وحقوق النشر. الشعارات الإضافية (حتى 5) من تبويب «صور الموقع».',
   chat: 'يظهر في نافذة المساعد الذكي.',
+  seo: 'العنوان والوصف والشعار الذي يظهر قبل دخول الموقع (تبويب المتصفح ومشاركة الرابط).',
 }
 
 const ADMIN_BACKUP_KEY = 'talha-admin-backup-v1'
@@ -254,10 +270,15 @@ export default function AdminDashboard() {
   }
 
   // ─── Scalar content ───
-  const getAuthHeader = async (): Promise<Record<string, string>> => {
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    return token ? { Authorization: `Bearer ${token}` } : {}
+  const getAuthHeader = () => getFreshAuthHeader()
+
+  const handlePhotoAuthFailure = (status: number, message?: string) => {
+    if (status === 401) {
+      setPhotoError(message || 'انتهت الجلسة — أعد تسجيل الدخول')
+      setTimeout(() => router.push('/admin/login'), 1500)
+      return true
+    }
+    return false
   }
 
   const saveHeroCarousel = async (slides: string[]) => {
@@ -280,12 +301,18 @@ export default function AdminDashboard() {
       form.append('key', `hero-slide-${Date.now()}`)
       const res = await fetch('/api/admin/photos', { method: 'POST', headers: auth, body: form })
       const data = await res.json()
-      if (!res.ok) { setPhotoError(data.error || 'فشل الرفع'); return }
+      if (!res.ok) {
+        if (!handlePhotoAuthFailure(res.status, data.error)) setPhotoError(data.error || 'فشل الرفع')
+        return
+      }
       const next = [...heroSlides, data.url as string]
       await saveHeroCarousel(next)
       setPhotoSuccess('تمت إضافة صورة للواجهة الرئيسية ✓')
       setTimeout(() => setPhotoSuccess(''), 3000)
-    } catch { setPhotoError('تعذّر الاتصال بالخادم') }
+    } catch (err) {
+      if (err instanceof AdminApiError) handleApiError(err)
+      else setPhotoError('تعذّر الاتصال بالخادم')
+    }
     finally { setPhotoUploading(null) }
   }
 
@@ -382,7 +409,10 @@ export default function AdminDashboard() {
       form.append('key', photoKey)
       const res = await fetch('/api/admin/photos', { method: 'POST', headers: auth, body: form })
       const data = await res.json()
-      if (!res.ok) { setPhotoError(data.error || 'فشل الرفع'); return }
+      if (!res.ok) {
+        if (!handlePhotoAuthFailure(res.status, data.error)) setPhotoError(data.error || 'فشل الرفع')
+        return
+      }
       setPhotoUrls(prev => ({ ...prev, [photoKey]: data.url }))
       if (photoKey === 'closing-bg') {
         await adminApi.saveContent([{ section: 'closing', key: 'show_bg', value_ar: '1', value_en: '1' }])
@@ -404,7 +434,10 @@ export default function AdminDashboard() {
       }
       setPhotoSuccess('تم رفع الصورة بنجاح — سيظهر التحديث على الموقع خلال ثوانٍ ✓')
       setTimeout(() => setPhotoSuccess(''), 3000)
-    } catch { setPhotoError('تعذّر الاتصال بالخادم') }
+    } catch (err) {
+      if (err instanceof AdminApiError) handleApiError(err)
+      else setPhotoError('تعذّر الاتصال بالخادم')
+    }
     finally { setPhotoUploading(null) }
   }
 
@@ -414,11 +447,20 @@ export default function AdminDashboard() {
     setPhotoError('')
     try {
       const auth = await getAuthHeader()
-      await fetch(`/api/admin/photos?key=${photoKey}`, { method: 'DELETE', headers: auth })
+      const res = await fetch(`/api/admin/photos?key=${photoKey}`, { method: 'DELETE', headers: auth })
+      if (!res.ok) {
+        let msg = 'تعذّر استعادة الصورة'
+        try { const data = await res.json(); msg = data.error || msg } catch { /* empty */ }
+        if (!handlePhotoAuthFailure(res.status, msg)) setPhotoError(msg)
+        return
+      }
       setPhotoUrls(prev => { const n = { ...prev }; delete n[photoKey]; return n })
       setPhotoSuccess('تمت استعادة الصورة الأصلية ✓')
       setTimeout(() => setPhotoSuccess(''), 3000)
-    } catch { setPhotoError('تعذّر استعادة الصورة') }
+    } catch (err) {
+      if (err instanceof AdminApiError) handleApiError(err)
+      else setPhotoError('تعذّر استعادة الصورة')
+    }
     finally { setPhotoUploading(null) }
   }
 
@@ -465,10 +507,7 @@ export default function AdminDashboard() {
     setContent(prev => prev.map(c => {
       if (c.section !== section || c.key !== key) return c
       const next: FieldTextStyle = { ...c.style }
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === undefined || v === '') delete next[k as keyof FieldTextStyle]
-        else next[k as keyof FieldTextStyle] = v as string
-      }
+      applyFieldTextStylePatch(next, patch)
       return { ...c, style: isEmptyStyle(next) ? undefined : next }
     }))
   }
@@ -476,10 +515,7 @@ export default function AdminDashboard() {
   const patchItemStyle = (itemId: string, patch: Partial<FieldTextStyle>) => {
     setItemStyles(prev => {
       const next: FieldTextStyle = { ...prev[itemId] }
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === undefined || v === '') delete next[k as keyof FieldTextStyle]
-        else next[k as keyof FieldTextStyle] = v as string
-      }
+      applyFieldTextStylePatch(next, patch)
       if (isEmptyStyle(next)) {
         const copy = { ...prev }
         delete copy[itemId]
@@ -506,6 +542,27 @@ export default function AdminDashboard() {
         next.delete(`${ITEM_STYLE_SECTION}.${itemId}`)
         return next
       })
+    }
+  }
+
+  const cardDescEnabled = (section: 'whyUs' | 'goals') => {
+    const row = content.find(c => c.section === section && c.key === 'show_card_desc')
+    const v = (row?.value_ar ?? '1').trim().toLowerCase()
+    return v !== '0' && v !== 'false' && v !== 'off'
+  }
+
+  const setCardDescEnabled = async (section: 'whyUs' | 'goals', on: boolean) => {
+    const val = on ? '1' : '0'
+    setContent(prev => prev.map(c =>
+      c.section === section && c.key === 'show_card_desc'
+        ? { ...c, value_ar: val, value_en: val }
+        : c,
+    ))
+    try {
+      await adminApi.saveContent([{ section, key: 'show_card_desc', value_ar: val, value_en: val }])
+      setDbKeys(prev => new Set(prev).add(`${section}.show_card_desc`))
+    } catch (err) {
+      handleApiError(err)
     }
   }
 
@@ -967,6 +1024,7 @@ export default function AdminDashboard() {
     { id: 'content',  label: 'نصوص الموقع',  Icon: Settings, badge: 0 },
     { id: 'lists',    label: 'إعادة هيكلة البطاقات', Icon: LayoutList, badge: 0 },
     { id: 'layout',   label: 'ترتيب الأقسام', Icon: LayoutGrid, badge: 0 },
+    { id: 'seo',      label: 'إعدادات الموقع', Icon: Sparkles, badge: 0 },
     { id: 'partners', label: 'شركاء النجاح',   Icon: Handshake, badge: 0 },
     { id: 'photos',   label: 'صور الموقع',     Icon: ImageIcon, badge: 0 },
   ]
@@ -976,11 +1034,13 @@ export default function AdminDashboard() {
     content: 'تعديل نصوص الموقع',
     lists: 'إعادة هيكلة البطاقات',
     layout: 'ترتيب أقسام الصفحة الرئيسية',
+    seo: 'إعدادات الموقع (SEO)',
     partners: 'إدارة شركاء النجاح',
     photos: 'صور الموقع',
   }
 
   const contentGroups = FIELD_GROUPS.filter(group => {
+    if (group.id === 'seo') return false
     const q = contentSearch.trim().toLowerCase()
     if (!q) return true
     if (group.titleAr.toLowerCase().includes(q) || group.titleEn.toLowerCase().includes(q)) return true
@@ -1312,6 +1372,10 @@ export default function AdminDashboard() {
                                 savingId={savingId}
                                 itemStyles={itemStyles}
                                 onPatchItemStyle={patchItemStyle}
+                                showCardDesc={sec.section === 'whyUs' || sec.section === 'goals' ? cardDescEnabled(sec.section as 'whyUs' | 'goals') : undefined}
+                                onToggleShowCardDesc={sec.section === 'whyUs' || sec.section === 'goals'
+                                  ? (on) => setCardDescEnabled(sec.section as 'whyUs' | 'goals', on)
+                                  : undefined}
                                 onAdd={() => addItem(sec.section)}
                                 onPatch={(id, f, v) => patchItem(sec.section, id, f, v)}
                                 onSave={(item, key) => saveItem(item, key)}
@@ -1375,6 +1439,10 @@ export default function AdminDashboard() {
                     savingId={savingId}
                     itemStyles={itemStyles}
                     onPatchItemStyle={patchItemStyle}
+                    showCardDesc={sec.section === 'whyUs' || sec.section === 'goals' ? cardDescEnabled(sec.section as 'whyUs' | 'goals') : undefined}
+                    onToggleShowCardDesc={sec.section === 'whyUs' || sec.section === 'goals'
+                      ? (on) => setCardDescEnabled(sec.section as 'whyUs' | 'goals', on)
+                      : undefined}
                     onAdd={() => addItem(sec.section)}
                     onPatch={(id, field, val) => patchItem(sec.section, id, field, val)}
                     onSave={(item, key) => saveItem(item, key)}
@@ -1763,6 +1831,157 @@ export default function AdminDashboard() {
             )
           })()}
 
+          {/* ─── SEO / Site Settings Tab ─── */}
+          {tab === 'seo' && (() => {
+            const seoGroup = FIELD_GROUPS.find(g => g.id === 'seo')
+            const singleValueKeys = new Set(['site_url', 'og_image'])
+            return (
+              <div style={{ maxWidth: 920 }}>
+                <div style={{ background: 'rgba(196,151,58,0.08)', border: '1px solid rgba(196,151,58,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 16, fontSize: 13.5, color: C.goldDark, lineHeight: 1.7 }}>
+                  {GROUP_HELP.seo} يظهر في تبويب المتصفح وعند مشاركة الرابط على واتساب وتويتر. اترك «صورة المعاينة» فارغة لاستخدام صورة الواجهة الرئيسية تلقائياً.
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleSaveContent}
+                    disabled={saveStatus === 'saving'}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: C.gold, border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: saveStatus === 'saving' ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
+                  >
+                    {saveStatus === 'saving' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    حفظ إعدادات الموقع
+                  </button>
+                  {saveStatus === 'saved' && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#166534', fontSize: 13, fontWeight: 600 }}>
+                      <CheckCircle2 size={16} /> تم الحفظ
+                    </span>
+                  )}
+                </div>
+
+                {(() => {
+                  const seoIconKey = 'seo-icon'
+                  const current = photoUrls[seoIconKey]
+                  const isCustom = !!current
+                  const isUploading = photoUploading === seoIconKey
+                  const displaySrc = current || '/site-icon.png'
+                  return (
+                    <div style={{ background: C.panel, border: `1px solid ${isCustom ? C.gold : C.border}`, borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '160px 1fr', gap: 0 }}>
+                        <div style={{ position: 'relative', height: isMobile ? 140 : 'auto', minHeight: 140, background: C.goldSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={displaySrc} alt="شعار نتائج البحث" style={{ width: 96, height: 96, objectFit: 'contain', borderRadius: 12, opacity: isUploading ? 0.4 : 1 }} />
+                          {isUploading && (
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.5)' }}>
+                              <Loader2 size={24} style={{ color: C.gold, animation: 'spin 1s linear infinite' }} />
+                            </div>
+                          )}
+                          {isCustom && (
+                            <span style={{ position: 'absolute', top: 8, right: 8, background: C.gold, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 100 }}>مُخصّص</span>
+                          )}
+                        </div>
+                        <div style={{ padding: '16px 18px' }}>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: '0 0 4px' }}>شعار نتائج البحث والمتصفح</p>
+                          <p style={{ fontSize: 12, color: C.dim, margin: '0 0 4px', lineHeight: 1.6 }}>
+                            الأيقونة الصغيرة بجانب الرابط في Google وتبويب المتصفح. يفضل صورة مربعة PNG/WebP بحجم 512×512 بخلفية غير شفافة.
+                          </p>
+                          <p style={{ fontSize: 11, color: C.muted, margin: '0 0 12px', direction: 'ltr' }}>/site-icon.png</p>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: C.gold, color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isUploading ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                              <Upload size={14} />
+                              {isCustom ? 'تغيير الشعار' : 'رفع شعار'}
+                              <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" style={{ display: 'none' }} disabled={isUploading}
+                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(seoIconKey, f); e.target.value = '' }} />
+                            </label>
+                            {isCustom && (
+                              <button type="button" onClick={() => restorePhoto(seoIconKey)} disabled={isUploading}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 13, cursor: isUploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                <RotateCcw size={13} /> استعادة الأصلية
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {(seoGroup?.fields ?? []).map(field => {
+                    const item = content.find(c => c.section === field.section && c.key === field.key)
+                    const isSingle = singleValueKeys.has(field.key)
+                    return (
+                      <div key={`${field.section}_${field.key}`} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 18px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                          <Pen size={13} style={{ color: C.gold, flexShrink: 0 }} />
+                          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{field.labelAr}</span>
+                        </div>
+                        {isSingle ? (
+                          <input
+                            value={item?.value_ar ?? ''}
+                            onChange={e => {
+                              const val = e.target.value
+                              setContent(prev => prev.map(c =>
+                                c.section === field.section && c.key === field.key
+                                  ? { ...c, value_ar: val, value_en: val }
+                                  : c,
+                              ))
+                            }}
+                            style={{ ...adminInputStyle, direction: 'ltr' }}
+                            placeholder={field.def.ar || field.labelEn}
+                            dir="ltr"
+                          />
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+                            <div>
+                              <label style={{ fontSize: 11, color: C.dim, display: 'block', marginBottom: 6 }}>عربي</label>
+                              {field.multiline ? (
+                                <textarea
+                                  value={item?.value_ar ?? ''}
+                                  onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)}
+                                  style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6 }}
+                                  dir="rtl"
+                                  placeholder={field.def.ar}
+                                />
+                              ) : (
+                                <input
+                                  value={item?.value_ar ?? ''}
+                                  onChange={e => handleContentChange(field.section, field.key, 'value_ar', e.target.value)}
+                                  style={adminInputStyle}
+                                  dir="rtl"
+                                  placeholder={field.def.ar}
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11, color: C.dim, display: 'block', marginBottom: 6 }}>English</label>
+                              {field.multiline ? (
+                                <textarea
+                                  value={item?.value_en ?? ''}
+                                  onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)}
+                                  style={{ ...adminInputStyle, minHeight: 88, resize: 'vertical', lineHeight: 1.6 }}
+                                  dir="ltr"
+                                  placeholder={field.def.en}
+                                />
+                              ) : (
+                                <input
+                                  value={item?.value_en ?? ''}
+                                  onChange={e => handleContentChange(field.section, field.key, 'value_en', e.target.value)}
+                                  style={adminInputStyle}
+                                  dir="ltr"
+                                  placeholder={field.def.en}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* ─── Partners Tab ─── */}
           {tab === 'partners' && (
             <div>
@@ -1869,7 +2088,7 @@ export default function AdminDashboard() {
 }
 
 function ListSectionEditor({
-  sec, rows, isPreview, isMobile, savingId, itemStyles, onPatchItemStyle, onAdd, onPatch, onSave, onToggleActive, onDelete, onMove,
+  sec, rows, isPreview, isMobile, savingId, itemStyles, onPatchItemStyle, showCardDesc, onToggleShowCardDesc, onAdd, onPatch, onSave, onToggleActive, onDelete, onMove,
 }: {
   sec: ListSection
   rows: ContentItem[]
@@ -1878,6 +2097,8 @@ function ListSectionEditor({
   savingId: string | null
   itemStyles: Record<string, FieldTextStyle>
   onPatchItemStyle: (itemId: string, patch: Partial<FieldTextStyle>) => void
+  showCardDesc?: boolean
+  onToggleShowCardDesc?: (on: boolean) => void
   onAdd: () => void
   onPatch: (rowKey: string, field: keyof ContentItem, val: ContentItem[keyof ContentItem]) => void
   onSave: (item: ContentItem, rowKey: string) => void
@@ -1898,6 +2119,17 @@ function ListSectionEditor({
         <span style={{ fontSize: 12, color: C.dim }}>{countLabel}</span>
       </div>
       <p style={{ fontSize: 12.5, color: C.muted, margin: '0 0 8px 14px' }}>{sec.hintAr}</p>
+      {onToggleShowCardDesc && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.text, margin: '0 0 12px 14px', cursor: 'pointer', fontWeight: 600 }}>
+          <input
+            type="checkbox"
+            checked={showCardDesc !== false}
+            onChange={e => onToggleShowCardDesc(e.target.checked)}
+            style={{ accentColor: C.gold, width: 16, height: 16 }}
+          />
+          إظهار أوصاف البطاقات في الموقع (للكل)
+        </label>
+      )}
       {isPreview && (
         <p style={{ fontSize: 12, color: C.goldDark, margin: '0 0 12px 14px', background: C.goldSoft, padding: '8px 12px', borderRadius: 8 }}>
           هذه العناصر تظهر على الموقع من النصوص الافتراضية. اضغط «{sec.addLabelAr}» أو «حفظ» لنشرها في قاعدة البيانات دون حذف ما هو محفوظ مسبقًا.
@@ -1942,6 +2174,19 @@ function ListSectionEditor({
                 </div>
                 {(sec.hasDesc || isStat) && (
                   <>
+                    <div style={{ gridColumn: isMobile ? 'auto' : '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>وصف البطاقة</span>
+                      {item.id && (sec.section === 'whyUs' || sec.section === 'goals') && (
+                        <button
+                          type="button"
+                          onClick={() => onPatchItemStyle(item.id!, { hideDesc: !itemStyles[item.id!]?.hideDesc })}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8, border: `1px solid ${itemStyles[item.id!]?.hideDesc ? '#F59E0B' : C.border}`, background: itemStyles[item.id!]?.hideDesc ? '#FFFBEB' : '#fff', color: itemStyles[item.id!]?.hideDesc ? '#92400E' : C.muted, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          {itemStyles[item.id!]?.hideDesc ? <EyeOff size={14} /> : <Eye size={14} />}
+                          {itemStyles[item.id!]?.hideDesc ? 'الوصف مخفي — اضغط للإظهار' : 'إخفاء الوصف من الموقع'}
+                        </button>
+                      )}
+                    </div>
                     <div>
                       <label style={labelStyle}>{isStat ? 'الوصف (عربي) — مثل سنة خبرة' : 'الوصف (عربي)'}</label>
                       <textarea value={item.desc_ar} onChange={e => onPatch(rowKey, 'desc_ar', e.target.value)} style={{ ...adminInputStyle, minHeight: 70, resize: 'vertical', lineHeight: 1.6 }} dir="rtl" placeholder={isStat ? 'سنة خبرة' : 'الوصف بالعربية'} />
@@ -1966,7 +2211,7 @@ function ListSectionEditor({
                   showDesc={!!(sec.hasDesc || isStat)}
                   style={itemStyles[item.id]}
                   onChange={patch => onPatchItemStyle(item.id!, patch)}
-                  onReset={() => onPatchItemStyle(item.id!, { color: undefined, fontSize: undefined, descColor: undefined, descFontSize: undefined })}
+                  onReset={() => onPatchItemStyle(item.id!, { color: undefined, fontSize: undefined, descColor: undefined, descFontSize: undefined, hideDesc: undefined })}
                 />
               ) : (
                 <p style={{ fontSize: 11, color: C.dim, margin: '10px 0 0' }}>احفظ البطاقة أولًا لتفعيل تنسيق اللون والحجم.</p>

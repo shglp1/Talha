@@ -6,4 +6,5 @@ export function revalidatePublicSite() {
   revalidatePath('/en', 'layout')
   revalidatePath('/ar')
   revalidatePath('/en')
+  revalidatePath('/site-icon.png')
 }

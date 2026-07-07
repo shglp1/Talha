@@ -5,6 +5,7 @@ export type FieldTextStyle = {
   fontSize?: string
   descColor?: string
   descFontSize?: string
+  hideDesc?: boolean
 }
 
 export const STYLE_KEY_SUFFIX = '__style'
@@ -21,6 +22,7 @@ export function parseFieldStyle(raw?: string | null): FieldTextStyle {
     if (typeof o.fontSize === 'string' && o.fontSize.trim()) out.fontSize = o.fontSize.trim()
     if (typeof o.descColor === 'string' && HEX.test(o.descColor.trim())) out.descColor = o.descColor.trim()
     if (typeof o.descFontSize === 'string' && o.descFontSize.trim()) out.descFontSize = o.descFontSize.trim()
+    if (o.hideDesc === true) out.hideDesc = true
     return out
   } catch {
     return {}
@@ -33,12 +35,13 @@ export function serializeFieldStyle(style: FieldTextStyle): string {
   if (style.fontSize?.trim()) payload.fontSize = style.fontSize.trim()
   if (style.descColor?.trim()) payload.descColor = style.descColor.trim()
   if (style.descFontSize?.trim()) payload.descFontSize = style.descFontSize.trim()
+  if (style.hideDesc === true) payload.hideDesc = true
   return JSON.stringify(payload)
 }
 
 export function isEmptyStyle(style?: FieldTextStyle | null): boolean {
   if (!style) return true
-  return !style.color && !style.fontSize && !style.descColor && !style.descFontSize
+  return !style.color && !style.fontSize && !style.descColor && !style.descFontSize && !style.hideDesc
 }
 
 /** Track which site_content keys exist after admin save (incl. __style / __vis / item_style). */

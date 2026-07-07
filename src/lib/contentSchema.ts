@@ -74,6 +74,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'nav', key: 'whyUs',    labelAr: 'لماذا نحن',  labelEn: 'Why Us',   def: { ar: t.ar.nav.whyUs,    en: t.en.nav.whyUs },    linkDef: { ar: '#whyus',    en: '#whyus' } },
       { section: 'nav', key: 'team',     labelAr: 'فريقنا',     labelEn: 'Team',     def: { ar: t.ar.nav.team,     en: t.en.nav.team },     linkDef: { ar: '#team',     en: '#team' } },
       { section: 'nav', key: 'clients',  labelAr: 'عملاؤنا',    labelEn: 'Clients',  def: { ar: t.ar.nav.clients,  en: t.en.nav.clients },  linkDef: { ar: '#clients',  en: '#clients' } },
+      { section: 'nav', key: 'partners', labelAr: 'شركاء النجاح', labelEn: 'Partners', def: { ar: t.ar.nav.partners, en: t.en.nav.partners }, linkDef: { ar: '#partners', en: '#partners' } },
       { section: 'nav', key: 'contact',  labelAr: 'تواصل معنا', labelEn: 'Contact',  def: { ar: t.ar.nav.contact,  en: t.en.nav.contact },  linkDef: { ar: '#contact',  en: '#contact' } },
     ],
   },
@@ -135,6 +136,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'whyUs', key: 'badge',    labelAr: 'الشارة',      labelEn: 'Badge',    def: { ar: t.ar.whyUs.badge,    en: t.en.whyUs.badge } },
       { section: 'whyUs', key: 'title',    labelAr: 'العنوان',     labelEn: 'Title',    def: { ar: t.ar.whyUs.title,    en: t.en.whyUs.title } },
       { section: 'whyUs', key: 'subtitle', labelAr: 'النص الفرعي', labelEn: 'Subtitle', multiline: true, def: { ar: t.ar.whyUs.subtitle, en: t.en.whyUs.subtitle } },
+      { section: 'whyUs', key: 'show_card_desc', labelAr: 'إظهار أوصاف البطاقات في الموقع', labelEn: 'Show card descriptions on site', def: { ar: '1', en: '1' } },
     ],
   },
   {
@@ -188,6 +190,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'goals', key: 'badge',    labelAr: 'الشارة',      labelEn: 'Badge',    def: { ar: t.ar.goals.badge,    en: t.en.goals.badge } },
       { section: 'goals', key: 'title',    labelAr: 'العنوان',     labelEn: 'Title',    def: { ar: t.ar.goals.title,    en: t.en.goals.title } },
       { section: 'goals', key: 'subtitle', labelAr: 'النص الفرعي', labelEn: 'Subtitle', multiline: true, def: { ar: t.ar.goals.subtitle, en: t.en.goals.subtitle } },
+      { section: 'goals', key: 'show_card_desc', labelAr: 'إظهار أوصاف البطاقات في الموقع', labelEn: 'Show card descriptions on site', def: { ar: '1', en: '1' } },
     ],
   },
   {
@@ -227,6 +230,19 @@ export const FIELD_GROUPS: FieldGroup[] = [
       { section: 'footer', key: 'tagline', labelAr: 'الجملة في التذييل (وسط التذييل)', labelEn: 'Footer tagline (centered)', multiline: true, def: { ar: t.ar.footer.tagline, en: t.en.footer.tagline } },
       { section: 'footer', key: 'officeName', labelAr: 'اسم المكتب (سطر حقوق النشر)', labelEn: 'Office name (copyright line)', def: { ar: 'مكتب د. طلحة غوث للمحاماة والاستشارات القانونية.', en: 'Dr. Talha Ghawth Law Office.' } },
       { section: 'footer', key: 'rights',  labelAr: 'حقوق النشر', labelEn: 'Rights', def: { ar: t.ar.footer.rights, en: t.en.footer.rights } },
+    ],
+  },
+  {
+    id: 'seo',
+    titleAr: 'إعدادات الموقع (SEO)',
+    titleEn: 'Site Settings (SEO)',
+    fields: [
+      { section: 'seo', key: 'title',          labelAr: 'عنوان التبويب (عربي)',           labelEn: 'Browser title (Arabic)',     def: { ar: 'مكتب د. طلحة غوث للمحاماة والاستشارات القانونية | المدينة المنورة', en: 'Dr. Talha Ghawth Law Office | Madinah, Saudi Arabia' } },
+      { section: 'seo', key: 'description',    labelAr: 'وصف الموقع (عربي)',              labelEn: 'Site description (Arabic)',  multiline: true, def: { ar: 'مكتب قانوني متخصص في المدينة المنورة يقدم استشارات وخدمات قانونية متكاملة للأعمال والأفراد والأوقاف والتركات. خبرة أكثر من 15 عاماً في القانون السعودي.', en: 'Specialized law office in Madinah providing comprehensive legal services for businesses, individuals, endowments and estates. Over 15 years of Saudi law expertise.' } },
+      { section: 'seo', key: 'og_title',       labelAr: 'عنوان المشاركة (عربي)',          labelEn: 'Share title (Arabic)',       def: { ar: 'د. طلحة غوث للمحاماة والاستشارات القانونية', en: 'Dr. Talha Ghawth Law Office' } },
+      { section: 'seo', key: 'og_description', labelAr: 'وصف المشاركة (عربي)',            labelEn: 'Share description (Arabic)', multiline: true, def: { ar: 'شريككم القانوني الموثوق في حماية الحقوق وتحقيق العدالة', en: 'Your trusted legal partner in protecting rights and achieving justice' } },
+      { section: 'seo', key: 'site_url',       labelAr: 'رابط الموقع الأساسي',            labelEn: 'Site URL',                   def: { ar: 'https://www.drtalha-law.com', en: 'https://www.drtalha-law.com' } },
+      { section: 'seo', key: 'og_image',       labelAr: 'صورة المعاينة (رابط — اتركه فارغاً لاستخدام صورة الهيرو)', labelEn: 'Preview image URL', def: { ar: '', en: '' } },
     ],
   },
   {
@@ -561,7 +577,7 @@ export function parseHomepageLayout(raw: string): { id: string; order: number; v
       return {
         id: s.id,
         order: o?.order ?? s.defaultOrder,
-        visible: o?.visible ?? s.defaultVisible,
+        visible: s.id === 'hero' ? true : (o?.visible ?? s.defaultVisible),
       }
     }).sort((a, b) => a.order - b.order)
   } catch {

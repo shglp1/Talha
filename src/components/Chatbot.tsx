@@ -8,6 +8,27 @@ import { cmsField } from '@/lib/cms-attrs'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
+const BIDI_RE = /\+?\d[\d\s\-()]{7,}|[\w.+-]+@[\w.-]+\.\w+/g
+
+/** Wrap phone numbers and emails in LTR spans so they display correctly in RTL chat. */
+function wrapBidiInline(text: string): React.ReactNode {
+  const nodes: React.ReactNode[] = []
+  let last = 0
+  const re = new RegExp(BIDI_RE.source, 'g')
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index))
+    nodes.push(
+      <span key={m.index} dir="ltr" className="inline-block">{m[0]}</span>,
+    )
+    last = m.index + m[0].length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  if (nodes.length === 0) return text
+  if (nodes.length === 1) return nodes[0]
+  return <>{nodes.map((n, i) => <React.Fragment key={i}>{n}</React.Fragment>)}</>
+}
+
 // Parse inline bold **text** into JSX
 function inlineBold(text: string, key: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*)/)
@@ -16,7 +37,7 @@ function inlineBold(text: string, key: string): React.ReactNode {
       {parts.map((p, j) =>
         p.startsWith('**') && p.endsWith('**')
           ? <strong key={j} className="font-semibold" style={{ color: 'var(--text)' }}>{p.slice(2, -2)}</strong>
-          : <span key={j}>{p}</span>
+          : <span key={j}>{wrapBidiInline(p)}</span>
       )}
     </span>
   )
@@ -88,7 +109,7 @@ function renderMessage(text: string) {
                     {e.bullets.map((b, bi) => (
                       <li key={bi} className="flex gap-1.5 items-start text-cream-muted">
                         <span className="mt-1.5 w-1 h-1 rounded-full bg-gold/60 flex-shrink-0" />
-                        <span>{b}</span>
+                        <span>{wrapBidiInline(b)}</span>
                       </li>
                     ))}
                   </ul>
@@ -109,7 +130,7 @@ function renderMessage(text: string) {
       elements.push(
         <div key={`b-${i}`} className="flex gap-1.5 items-start text-[13px] text-cream-muted">
           <span className="mt-1.5 w-1 h-1 rounded-full bg-gold/60 flex-shrink-0" />
-          <span>{trimmed.slice(2)}</span>
+          <span>{wrapBidiInline(trimmed.slice(2))}</span>
         </div>
       )
     } else {
@@ -138,7 +159,7 @@ function renderMessage(text: string) {
                   {e.bullets.map((b, bi) => (
                     <li key={bi} className="flex gap-1.5 items-start text-cream-muted">
                       <span className="mt-1.5 w-1 h-1 rounded-full bg-gold/60 flex-shrink-0" />
-                      <span>{b}</span>
+                      <span>{wrapBidiInline(b)}</span>
                     </li>
                   ))}
                 </ul>

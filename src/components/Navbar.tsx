@@ -8,6 +8,7 @@ import { t } from '@/lib/translations'
 import { useContent } from '@/components/ContentProvider'
 import { cmsField } from '@/lib/cms-attrs'
 import { navHrefDefault } from '@/lib/contentSchema'
+import { NAV_LINK_KEYS } from '@/lib/nav-links'
 import { resolveNavHref } from '@/lib/url'
 
 const SCROLL_THRESHOLD = 48
@@ -38,16 +39,11 @@ export default function Navbar({ lang }: { lang: Lang }) {
     return resolveNavHref(ov('nav', `${key}_href`, def), def)
   }
 
-  const links = [
-    { key: 'about',    label: ov('nav', 'about',    tr.nav.about) },
-    { key: 'services', label: ov('nav', 'services', tr.nav.services) },
-    { key: 'vision',   label: ov('nav', 'vision',   tr.nav.vision) },
-    { key: 'whyUs',    label: ov('nav', 'whyUs',    tr.nav.whyUs) },
-    { key: 'team',     label: ov('nav', 'team',     tr.nav.team) },
-    { key: 'clients',  label: ov('nav', 'clients',  tr.nav.clients) },
-  ]
-    .map(l => ({ ...l, href: navHref(l.key) }))
-    .filter(l => !hidden('nav', l.key))
+  const links = NAV_LINK_KEYS.map(key => ({
+    key,
+    label: ov('nav', key, (tr.nav as Record<string, string>)[key] ?? key),
+    href: navHref(key),
+  })).filter(l => !hidden('nav', l.key))
 
   const contactHref = navHref('contact')
 

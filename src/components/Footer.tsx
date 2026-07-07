@@ -164,7 +164,7 @@ export default function Footer({ lang }: { lang: Lang }) {
               )}
               {email && (
                 <FooterRow icon={Mail} href={`mailto:${email}`}>
-                  <span {...cmsField('footer', 'email')}>{email}</span>
+                  <span dir="ltr" className="inline-block" {...cmsField('footer', 'email')}>{email}</span>
                 </FooterRow>
               )}
               {address && (

@@ -23,11 +23,11 @@ export default function HeroCarousel({ slides, fallback, alt, intervalMs = 6000 
   }, [urls.length, intervalMs])
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 z-0 h-full w-full">
       {urls.map((src, i) => (
         <div
           key={`${src}-${i}`}
-          className="absolute inset-0 transition-opacity duration-[1800ms] ease-in-out"
+          className="absolute inset-0 h-full w-full transition-opacity duration-[1800ms] ease-in-out"
           style={{ opacity: i === index ? 1 : 0, zIndex: i === index ? 1 : 0 }}
         >
           <SitePhoto
@@ -38,12 +38,13 @@ export default function HeroCarousel({ slides, fallback, alt, intervalMs = 6000 
             priority={i === 0}
             quality={95}
             sizes="100vw"
-            className="object-cover object-center"
+            className="object-cover max-sm:object-[50%_28%] sm:object-[center_22%] lg:object-center"
           />
         </div>
       ))}
+      <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/55 via-transparent to-transparent max-sm:from-black/65" />
       {urls.length > 1 && (
-        <div className="absolute bottom-24 inset-x-0 z-10 flex justify-center gap-2 pointer-events-none">
+        <div className="pointer-events-none absolute inset-x-0 bottom-5 z-10 hidden justify-center gap-2 opacity-60 sm:bottom-8 sm:flex">
           {urls.map((_, i) => (
             <span
               key={i}

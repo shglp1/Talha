@@ -55,7 +55,7 @@ export default function About({ lang }: { lang: Lang }) {
                   fill
                   quality={90}
                   sizes="(max-width: 1024px) 420px, 50vw"
-                  className="object-cover object-center"
+                  className="object-cover object-top sm:object-center"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-obsidian/40 via-transparent to-transparent" />
               </div>

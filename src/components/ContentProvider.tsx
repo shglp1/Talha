@@ -5,6 +5,7 @@ import { defaultListItems, parseHomepageLayout } from '@/lib/contentSchema'
 import type { PublicContentPayload } from '@/lib/content-server'
 import type { Lang } from '@/lib/translations'
 import CmsStyleSheet from '@/components/CmsStyleSheet'
+import { parseFieldStyle, ITEM_STYLE_SECTION } from '@/lib/text-style'
 
 /**
  * Loads all CMS data from /api/content (server + service role) so the public
@@ -25,6 +26,7 @@ type ContentValue = {
   enabled: (section: string, key: string, defaultOn?: boolean) => boolean
   hidden: (section: string, key: string) => boolean
   list: (section: string, fallback: LocalItem[]) => LocalItem[]
+  itemHideDesc: (itemId?: string) => boolean
   extras: (section: string) => ExtraField[]
   partners: Partner[]
   partnersSeeded: boolean
@@ -188,6 +190,16 @@ export function ContentProvider({
     [items, lang, seededSections, managedSections],
   )
 
+  const itemHideDesc = useCallback(
+    (itemId?: string) => {
+      if (!itemId) return false
+      const row = scalars[`${ITEM_STYLE_SECTION}.${itemId}`]
+      if (!row) return false
+      return parseFieldStyle(row.value_ar).hideDesc === true
+    },
+    [scalars],
+  )
+
   const sectionLayout = useCallback(() => {
     const row = scalars['layout.homepage_sections']
     const raw = row?.value_ar || row?.value_en || ''
@@ -214,7 +226,7 @@ export function ContentProvider({
   )
 
   return (
-    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, heroCarousel, enabled, hidden, list, extras, partners, partnersSeeded, sectionLayout }}>
+    <ContentContext.Provider value={{ lang, loading, refresh: fetchContent, ov, photoUrl, heroCarousel, enabled, hidden, list, itemHideDesc, extras, partners, partnersSeeded, sectionLayout }}>
       <CmsStyleSheet rows={Object.values(scalars)} />
       {children}
     </ContentContext.Provider>
@@ -234,6 +246,7 @@ export function useContent(): ContentValue {
       enabled: (_s, _k, defaultOn = true) => defaultOn,
       hidden: () => false,
       list: (_s, fallback) => fallback,
+      itemHideDesc: () => false,
       extras: () => [],
       partners: [],
       partnersSeeded: false,

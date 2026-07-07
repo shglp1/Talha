@@ -8,10 +8,22 @@ export class AdminApiError extends Error {
   }
 }
 
+/** Refresh the session and return a Bearer auth header for admin API calls. */
+export async function getFreshAuthHeader(): Promise<Record<string, string>> {
+  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+  if (refreshError || !refreshData.session?.access_token) {
+    await supabase.auth.signOut().catch(() => {})
+    throw new AdminApiError('انتهت الجلسة — أعد تسجيل الدخول', 401)
+  }
+  return { Authorization: `Bearer ${refreshData.session.access_token}` }
+}
+
 async function authHeader(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  try {
+    return await getFreshAuthHeader()
+  } catch {
+    return {}
+  }
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
